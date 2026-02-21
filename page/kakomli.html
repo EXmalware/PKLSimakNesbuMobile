@@ -1,0 +1,3039 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Dashboard Kakomli - SIMAK NESBU</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet for Map Picker -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @media print {
+
+            .sidebar,
+            .mobile-header,
+            .no-print,
+            header,
+            .btn-close,
+            .toast-container,
+            .section {
+                display: none !important;
+            }
+
+            @page {
+                margin-top: 0;
+            }
+
+            .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+    <script>
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('active');
+                document.body.classList.toggle('sidebar-open', sidebar.classList.contains('active'));
+            }
+        }
+
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById('toggleIcon-' + inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                if (icon) icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+    </script>
+</head>
+
+<body class="dashboard">
+    <header class="mobile-header">
+        <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <div class="logo-circle">
+                <img src="https://blogger.googleusercontent.com/img/a/AVvXsEj0gidDMAxs79SkpgBW6-nRy7SLq7ytNTzeXSLp8-sX5SKhlCY7JHDHr7BNvJ9nTF8YgHbB_kubuvfYzX4t4ONGFDfoL2-AMa8mgK29o6XGebiHkSMgiO2BoXpv0fATKQ9XMf-RPWGbqrr_KQ1iVX3JeWYh9JGXR43QSWxyIa2o-qeJR9S0_8dxANpck08"
+                    alt="Logo"
+                    style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 5px rgba(var(--primary-rgb), 0.3));">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <span class="text-gradient"
+                    style="font-weight: 800; font-size: 1.1rem; line-height: 1; font-family: 'Outfit', sans-serif;">SIMAK</span>
+                <span
+                    style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; letter-spacing: 0.1em; opacity: 0.8;">NESBU</span>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="profile-dropdown-container">
+                <div class="header-profile" onclick="toggleProfileDropdown(event)"
+                    style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <img src="" alt="" id="headerAvatar"
+                        style="width: 36px; height: 36px; border-radius: 12px; border: 1.5px solid var(--glass-border); object-fit: cover; display: none;">
+                    <div id="headerAvatarPlaceholder"
+                        style="width: 36px; height: 36px; border-radius: 12px; border: 1.5px solid var(--glass-border); background: var(--glass-bg); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-user-tie" style="color: var(--text-muted); font-size: 1.1rem;"></i>
+                    </div>
+                </div>
+                <div id="profileDropdown" class="profile-dropdown">
+                    <div class="dropdown-item" onclick="openProfileModal()">
+                        <i class="fas fa-user-edit"></i> Edit Profil
+                    </div>
+                    <div class="dropdown-item" onclick="openProfileModal()">
+                        <i class="fas fa-key"></i> Ganti Password
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger" onclick="AUTH.logout()">
+                        <i class="fas fa-sign-out-alt"></i> Keluar
+                    </div>
+                </div>
+            </div>
+            <button class="menu-toggle" onclick="toggleMobileSidebar()"
+                style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--text-main);">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <aside class="sidebar glass" id="sidebar">
+        <div class="user-profile" onclick="openProfileModal()">
+            <img class="avatar" id="sideAvatar" src="" alt="" referrerpolicy="no-referrer">
+            <div>
+                <h4 id="userName">Kakomli Name</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">Ketua Kompetensi</p>
+            </div>
+        </div>
+        <div class="sidebar-content">
+            <ul class="sidebar-menu">
+                <li><a href="#" id="nav-dashboard" class="active" onclick="showSection('dashboard')"><i
+                            class="fas fa-home"></i> Beranda</a></li>
+                <li><a href="#" id="nav-locations" onclick="showSection('locations')"><i
+                            class="fas fa-map-marker-alt"></i> Lokasi PKL</a></li>
+                <li><a href="#" id="nav-students" onclick="showSection('students')"><i class="fas fa-user-graduate"></i>
+                        Data Siswa</a></li>
+                <li><a href="#" id="nav-applications" onclick="showSection('applications')"><i
+                            class="fas fa-file-invoice"></i> Pengajuan PKL</a></li>
+                <li><a href="#" id="nav-attendance" onclick="showSection('attendance')"><i
+                            class="fas fa-calendar-check"></i> Absensi</a></li>
+                <li><a href="#" id="nav-report-title" onclick="showSection('report-title')"><i class="fas fa-book"></i>
+                        Pengajuan Judul</a></li>
+                <li><a href="#" id="nav-bimbingan" onclick="showSection('bimbingan')"><i
+                            class="fas fa-clipboard-check"></i> Bimbingan</a></li>
+                <li><a href="#" id="nav-profile" onclick="showSection('profile')"><i class="fas fa-user-circle"></i>
+                        Profil Saya</a></li>
+                <li><a href="#" onclick="AUTH.logout()" style="color: var(--danger);"><i
+                            class="fas fa-sign-out-alt"></i> Keluar</a></li>
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <div style="display: flex; align-items: center; gap: 0.5rem; opacity: 0.6;">
+                <i class="fas fa-shield-virus"></i>
+                <span>Malware Developed</span>
+            </div>
+            <div style="font-size: 0.65rem; margin-top: 0.25rem;">&copy; 2026 SIMAK NESBU</div>
+        </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()" aria-hidden="true"></div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <ul class="bottom-nav-list">
+            <li><a href="#" class="bottom-nav-link active" id="bnav-dashboard" onclick="showSection('dashboard')"><i
+                        class="fas fa-th-large"></i><span>Home</span></a></li>
+            <li><a href="#" class="bottom-nav-link" id="bnav-locations" onclick="showSection('locations')"><i
+                        class="fas fa-map-marker-alt"></i><span>Lokasi</span></a></li>
+            <li><a href="#" class="bottom-nav-link" id="bnav-students" onclick="showSection('students')"><i
+                        class="fas fa-user-graduate"></i><span>Siswa</span></a></li>
+            <li><a href="#" class="bottom-nav-link" id="bnav-applications" onclick="showSection('applications')"><i
+                        class="fas fa-file-invoice"></i><span>Apps</span></a></li>
+            <li><a href="#" class="bottom-nav-link" onclick="toggleMobileSidebar()"><i
+                        class="fas fa-bars"></i><span>More</span></a></li>
+        </ul>
+    </nav>
+
+
+
+    <main class="main-content">
+        <header>
+            <h2 id="sectionTitle">Dashboard Kakomli</h2>
+        </header>
+
+        <!-- Dashboard Section -->
+        <div id="section-dashboard" class="section">
+            <div id="homeWelcome" class="fade-in"
+                style="margin-bottom: 2rem; animation: slideInLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;">
+                <p id="greetingText"
+                    style="font-size: 1.1rem; color: var(--primary-light); font-weight: 700; margin-bottom: 0.25rem;">
+                    Selamat Datang! 👋</p>
+                <h1 id="welcomeName"
+                    style="font-family: 'Outfit', sans-serif; font-size: 1.75rem; font-weight: 800; line-height: 1.1; color: var(--text-main);">
+                    -</h1>
+            </div>
+
+            <!-- Dashboard Stats Pills -->
+            <div
+                style="display: flex; gap: 0.75rem; margin-bottom: 2rem; overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: none; -ms-overflow-style: none;">
+                <div class="glass"
+                    style="padding: 0.75rem 1.25rem; border-radius: 1rem; display: flex; align-items: center; gap: 0.75rem; white-space: nowrap;">
+                    <i class="fas fa-user-graduate" style="color: var(--secondary);"></i>
+                    <span id="count-students" style="font-weight: 700;">0</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Siswa Jurusan</span>
+                </div>
+                <div class="glass"
+                    style="padding: 0.75rem 1.25rem; border-radius: 1rem; display: flex; align-items: center; gap: 0.75rem; white-space: nowrap;">
+                    <i class="fas fa-map-marker-alt" style="color: var(--accent);"></i>
+                    <span id="count-locations" style="font-weight: 700;">0</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Tempat PKL</span>
+                </div>
+                <div class="glass"
+                    style="padding: 0.75rem 1.25rem; border-radius: 1rem; display: flex; align-items: center; gap: 0.75rem; white-space: nowrap;">
+                    <i class="fas fa-clipboard-check" style="color: var(--success);"></i>
+                    <span id="count-app-approved" style="font-weight: 700;">0</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Disetujui</span>
+                </div>
+                <div class="glass"
+                    style="padding: 0.75rem 1.25rem; border-radius: 1rem; display: flex; align-items: center; gap: 0.75rem; white-space: nowrap;">
+                    <i class="fas fa-clock" style="color: var(--warning);"></i>
+                    <span id="count-app-pending" style="font-weight: 700;">0</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Menunggu</span>
+                </div>
+            </div>
+
+            <div class="launcher-grid">
+                <div class="launcher-item" onclick="showSection('locations')">
+                    <i class="fas fa-map-marker-alt" style="color: var(--secondary);"></i>
+                    <span>Lokasi PKL</span>
+                </div>
+                <div class="launcher-item" onclick="showSection('students')">
+                    <i class="fas fa-graduation-cap" style="color: var(--accent);"></i>
+                    <span>Data Siswa</span>
+                </div>
+                <div class="launcher-item" onclick="showSection('applications')">
+                    <i class="fas fa-file-invoice" style="color: var(--info);"></i>
+                    <span>Pengajuan PKL</span>
+                </div>
+                <div class="launcher-item" onclick="showSection('attendance')">
+                    <i class="fas fa-calendar-check" style="color: var(--success);"></i>
+                    <span>Absensi</span>
+                </div>
+                <div class="launcher-item" onclick="showSection('report-title')">
+                    <i class="fas fa-book" style="color: var(--warning);"></i>
+                    <span>Judul Laporan</span>
+                </div>
+                <div class="launcher-item" onclick="showSection('bimbingan')">
+                    <i class="fas fa-clipboard-check" style="color: var(--primary-light);"></i>
+                    <span>Bimbingan</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Location Management Section -->
+        <div id="section-locations" class="section hidden">
+            <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3 style="color: var(--text-main);"><i class="fas fa-map-marker-alt"
+                            style="margin-right: 0.5rem; color: var(--accent);"></i>Daftar Lokasi PKL</h3>
+                    <button class="btn btn-primary" style="width: auto; padding: 0.6rem 1.2rem;"
+                        onclick="toggleAddLocationModal(true)">
+                        <i class="fas fa-plus"></i> Tambah Lokasi
+                    </button>
+                </div>
+
+                <div id="locationDataContainer">
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    <th style="padding: 1rem;">Lokasi & Alamat</th>
+                                    <th style="padding: 1rem;">Mentor</th>
+                                    <th style="padding: 1rem;">Jurusan</th>
+                                    <th style="padding: 1rem; text-align: right; padding-right: 1.5rem;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="locationTableBody">
+                                <!-- Data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Data Management Section -->
+        <div id="section-students" class="section hidden">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 300px;">
+                    <h3 style="color: var(--text-main); font-family: 'Outfit', sans-serif; font-size: 1.25rem;">
+                        <i class="fas fa-user-graduate"
+                            style="margin-right: 0.5rem; color: var(--secondary);"></i>Daftar Siswa
+                    </h3>
+                    <div class="search-premium" style="flex: 1; max-width: 350px; position: relative;">
+                        <i class="fas fa-search"
+                            style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.4;"></i>
+                        <input type="text" id="studentSearchInput" oninput="filterStudents(this.value)"
+                            placeholder="Cari NIS atau Nama..."
+                            style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.8rem; border-radius: 2rem; background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); font-size: 0.85rem; outline: none;">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn btn-primary" onclick="toggleAddStudentModal(true)"
+                        style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;"
+                        title="Tambah Siswa">
+                        <i class="fas fa-plus"></i>
+                    </button>
+
+                    <div
+                        style="display: flex; gap: 0.25rem; background: rgba(255,255,255,0.03); padding: 0.25rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <button class="action-btn" onclick="exportToExcel()" title="Export Excel"
+                            style="width: 36px; height: 36px;">
+                            <i class="fas fa-file-excel" style="color: #22c55e;"></i>
+                        </button>
+                        <button class="action-btn" onclick="exportToPDF()" title="Export PDF"
+                            style="width: 36px; height: 36px;">
+                            <i class="fas fa-file-pdf" style="color: #ef4444;"></i>
+                        </button>
+                        <button class="action-btn" onclick="triggerImport()" title="Import Excel"
+                            style="width: 36px; height: 36px;">
+                            <i class="fas fa-file-import" style="color: #3b82f6;"></i>
+                        </button>
+                        <button class="action-btn" onclick="downloadTemplate()" title="Format Import"
+                            style="width: 36px; height: 36px;">
+                            <i class="fas fa-download" style="color: var(--text-muted);"></i>
+                        </button>
+                    </div>
+                    <input type="file" id="importFile" hidden accept=".xlsx, .xls" onchange="handleImport(this)">
+                </div>
+            </div>
+
+            <div id="studentDataContainer">
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                        <thead>
+                            <tr
+                                style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                <th style="padding: 1rem;">Siswa</th>
+                                <th style="padding: 1rem;">Kelas & Jurusan</th>
+                                <th style="padding: 1rem;">Status PKL</th>
+                                <th style="padding: 1rem; text-align: right; padding-right: 1.5rem;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentTableBody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- PKL Applications Section -->
+        <div id="section-applications" class="section hidden">
+            <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3 style="color: var(--text-main);"><i class="fas fa-file-invoice"
+                            style="margin-right: 0.5rem; color: var(--primary);"></i>Daftar Pengajuan PKL</h3>
+                    <div class="search-box" style="width: 320px; background: var(--glass-bg);">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Cari NIS atau Nama..." oninput="filterApplications(this.value)">
+                    </div>
+                </div>
+                <div id="applicationDataContainer">
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    <th style="padding: 1rem;">Siswa & NIS</th>
+                                    <th style="padding: 1rem;">Tempat PKL</th>
+                                    <th style="padding: 1rem;">Tipe & Tanggal</th>
+                                    <th style="padding: 1rem;">Status</th>
+                                    <th style="padding: 1rem; text-align: right; padding-right: 1.5rem;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="applicationTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding: 2rem;">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Monitoring Section -->
+        <div id="section-attendance" class="section hidden">
+            <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <h3 style="color: var(--text-main);"><i class="fas fa-calendar-check"
+                            style="margin-right: 0.5rem; color: var(--success);"></i>Data Kehadiran Siswa</h3>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <input type="text" id="attendanceSearch" placeholder="Cari NIS, Nama, atau Status..."
+                            oninput="filterAttendance(this.value)"
+                            style="padding: 0.6rem 1rem; border-radius: 0.75rem; border: 1px solid var(--glass-border); width: 280px; background: var(--glass-bg); color: var(--text-main);">
+                        <button class="btn btn-primary" onclick="loadAttendance()"
+                            style="width: auto; padding: 0.6rem 1.2rem;">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div id="attendanceDataContainer">
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    <th style="padding: 1rem;">Siswa</th>
+                                    <th style="padding: 1rem;">Tanggal</th>
+                                    <th style="padding: 1rem;">Masuk</th>
+                                    <th style="padding: 1rem;">Pulang</th>
+                                    <th style="padding: 1rem;">Status</th>
+                                    <th style="padding: 1rem;">Jurnal</th>
+                                    <th style="padding: 1rem; text-align: right; padding-right: 1.5rem;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <tr>
+                                    <td colspan="7" style="text-align:center; padding: 2rem;">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Title Monitoring Section -->
+        <div id="section-report-title" class="section hidden">
+            <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <h3 style="color: var(--text-main);"><i class="fas fa-book"
+                            style="margin-right: 0.5rem; color: var(--accent);"></i>Pengajuan Judul Laporan</h3>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <input type="text" id="reportTitleSearch" placeholder="Cari NIS, Nama, atau Judul..."
+                            oninput="filterReportTitles(this.value)"
+                            style="padding: 0.6rem 1rem; border-radius: 0.75rem; border: 1px solid var(--glass-border); width: 280px; background: var(--glass-bg); color: var(--text-main);">
+                        <button class="btn btn-primary" onclick="loadReportTitles()"
+                            style="width: auto; padding: 0.6rem 1.2rem;">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div id="reportTitleDataContainer">
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    <th style="padding: 1rem;">Siswa</th>
+                                    <th style="padding: 1rem;">Judul Laporan</th>
+                                    <th style="padding: 1rem;">Status</th>
+                                    <th style="padding: 1rem; text-align: right; padding-right: 1.5rem;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTitleTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align:center; padding: 2rem;">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bimbingan & Monitoring Section -->
+        <div id="section-bimbingan" class="section hidden">
+            <div class="glass-card" style="padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3 style="color: var(--text-main);"><i class="fas fa-clipboard-check"
+                            style="margin-right: 0.5rem; color: var(--success);"></i>Bimbingan</h3>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary"
+                            style="width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;"
+                            onclick="openBimbinganModal()" title="Input Kegiatan">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="btn glass"
+                            style="width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: rgba(255,255,255,0.05);"
+                            onclick="loadBimbinganData()" title="Refresh Data">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="bimbinganDataContainer">
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); text-align: left; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    <th style="padding: 1rem;">Tanggal</th>
+                                    <th style="padding: 1rem;">Siswa</th>
+                                    <th style="padding: 1rem;">Jenis Kegiatan</th>
+                                    <th style="padding: 1rem;">Deskripsi</th>
+                                    <th style="padding: 1rem;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bimbinganTableBody">
+                                <tr>
+                                    <td colspan="5"
+                                        style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                                        Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Profile Section -->
+        <div id="section-profile" class="section hidden">
+            <div class="glass-card" style="padding: 2.5rem; max-width: 800px; margin: 0 auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3 style="color: var(--text-main);"><i class="fas fa-user-circle"
+                            style="margin-right: 0.5rem; color: var(--primary);"></i>Profil Saya</h3>
+                    <div id="profileActionBtns" style="display: flex; gap: 0.75rem;">
+                        <button class="btn btn-primary" onclick="switchProfileState('edit')" id="btnToEditProf">
+                            <i class="fas fa-user-edit"></i> Edit Profil
+                        </button>
+                        <button class="btn glass" onclick="switchProfileState('password')" id="btnToPassProf">
+                            <i class="fas fa-key"></i> Ganti Password
+                        </button>
+                    </div>
+                </div>
+
+                <!-- View Mode -->
+                <div id="profViewContent" class="fade-in">
+                    <div style="display: flex; gap: 2.5rem; align-items: start; flex-wrap: wrap;">
+                        <div style="flex-shrink: 0; text-align: center;">
+                            <div class="profile-avatar-wrapper" style="cursor: default;">
+                                <img id="profViewAvatar" src="" alt="Avatar" class="avatar-large"
+                                    onerror="this.src='https://ui-avatars.com/api/?name=Kakomli&background=random'">
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 300px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                                <div class="detail-item">
+                                    <label
+                                        style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Nama
+                                        Lengkap</label>
+                                    <div id="pViewNama"
+                                        style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);"></div>
+                                </div>
+                                <div class="detail-item">
+                                    <label
+                                        style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">NIP
+                                        / ID</label>
+                                    <div id="pViewNip"
+                                        style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);"></div>
+                                </div>
+                                <div class="detail-item">
+                                    <label
+                                        style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Username</label>
+                                    <div id="pViewUser"
+                                        style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);"></div>
+                                </div>
+                                <div class="detail-item">
+                                    <label
+                                        style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Jurusan</label>
+                                    <div id="pViewJurusan"
+                                        style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);"></div>
+                                </div>
+                                <div class="detail-item" style="grid-column: span 2;">
+                                    <label
+                                        style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Nomor
+                                        WhatsApp</label>
+                                    <div id="pViewKontak"
+                                        style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Mode -->
+                <div id="profEditContent" class="hidden fade-in">
+                    <form id="profileEditForm" onsubmit="saveProfile(event)">
+                        <div style="display: flex; gap: 2.5rem; align-items: start; flex-wrap: wrap;">
+                            <div style="flex-shrink: 0; text-align: center;">
+                                <div class="profile-avatar-wrapper"
+                                    onclick="document.getElementById('profilePhotoInput').click()"
+                                    title="Klik untuk ubah foto">
+                                    <img id="profModalAvatar" src="" alt="Avatar" class="avatar-large"
+                                        onerror="this.src='https://ui-avatars.com/api/?name=Kakomli&background=random'">
+                                    <div class="overlay"><i class="fas fa-camera"></i></div>
+                                    <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;"
+                                        onchange="handleAvatarPreview(this)">
+                                </div>
+                            </div>
+                            <div style="flex: 1; min-width: 300px;">
+                                <div class="form-group" style="margin-bottom: 1.5rem;">
+                                    <label
+                                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Username</label>
+                                    <input type="text" id="profUsername" required
+                                        style="background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 1.5rem;">
+                                    <label
+                                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">WhatsApp</label>
+                                    <input type="text" id="profEditKontak" required
+                                        style="background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <button type="button" class="btn glass" onclick="switchProfileState('view')"
+                                        style="flex: 1;">Batal</button>
+                                    <button type="submit" id="btnSaveProfile" class="btn btn-primary"
+                                        style="flex: 2;">Simpan Perubahan</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Password Mode -->
+                <div id="profPassContent" class="hidden fade-in">
+                    <form id="passwordEditForm" onsubmit="savePassword(event)">
+                        <div style="max-width: 400px; margin: 0 auto;">
+                            <div class="form-group" style="margin-bottom: 1.5rem;">
+                                <label
+                                    style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Password
+                                    Lama</label>
+                                <div class="password-wrapper">
+                                    <input type="password" id="profOldPass" required
+                                        style="background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.75rem; width: 100%; padding-right: 2.5rem;">
+                                    <button type="button" class="password-toggle"
+                                        onclick="togglePasswordVisibility('profOldPass')">
+                                        <i id="toggleIcon-profOldPass" class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 2rem;">
+                                <label
+                                    style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Password
+                                    Baru</label>
+                                <div class="password-wrapper">
+                                    <input type="password" id="profNewPass" required
+                                        style="background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.75rem; width: 100%; padding-right: 2.5rem;">
+                                    <button type="button" class="password-toggle"
+                                        onclick="togglePasswordVisibility('profNewPass')">
+                                        <i id="toggleIcon-profNewPass" class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" class="btn glass" onclick="switchProfileState('view')"
+                                    style="flex: 1;">Batal</button>
+                                <button type="submit" id="btnSavePassword" class="btn btn-primary"
+                                    style="flex: 2;">Update Password</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Bimbingan (Add/Edit) -->
+    <div id="bimbinganModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center; z-index: 1000; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass-card"
+            style="width: 95%; max-width: 600px; padding: 2.5rem; position: relative; max-height: 90vh; overflow-y: auto;">
+            <button class="btn-close" onclick="toggleBimbinganModal(false)"
+                style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 id="bimbinganModalTitle" style="margin-bottom: 2rem; color: var(--text-main); font-weight: 700;">Input
+                Kegiatan Bimbingan</h3>
+            <form id="bimbinganForm">
+                <input type="hidden" id="bimId">
+                <input type="hidden" id="bimPhotoUrl">
+
+                <!-- Dropdown Checklist for Pilih Siswa -->
+                <div class="form-group" style="margin-bottom: 1.5rem; position: relative;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Pilih
+                        Siswa</label>
+                    <div id="studentDropdownTrigger" onclick="toggleStudentDropdown(event)"
+                        style="background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.75rem 1rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; min-height: 46px;">
+                        <span id="selectedCountDisplay">Pilih minimal satu siswa</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.8rem; opacity: 0.5;"></i>
+                    </div>
+
+                    <div id="selectedStudentsList"
+                        style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+
+                    <div id="studentDropdownMenu" class="hidden glass"
+                        style="position: absolute; top: 100%; left: 0; width: 100%; z-index: 1001; margin-top: 0.5rem; border-radius: 1rem; border: 1px solid var(--glass-border); box-shadow: 0 10px 25px rgba(0,0,0,0.3); overflow: hidden; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(20px);">
+                        <div style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">
+                            <input type="text" id="studentSearchInput" placeholder="Cari nama atau NIS..."
+                                oninput="filterStudentList()"
+                                style="width: 100%; padding: 0.6rem 0.85rem; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 0.6rem; color: var(--text-main); font-size: 0.85rem;">
+                        </div>
+                        <div id="bimNisChecklist" style="max-height: 200px; overflow-y: auto; padding: 0.5rem;">
+                            <!-- Students will be loaded here -->
+                        </div>
+                        <div
+                            style="padding: 0.75rem; border-top: 1px solid var(--glass-border); display: flex; justify-content: flex-end;">
+                            <button type="button" class="btn btn-primary" onclick="toggleStudentDropdown(event)"
+                                style="padding: 0.4rem 1rem; font-size: 0.8rem; width: auto;">Selesai</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vertical Stacked Layout -->
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Tanggal</label>
+                    <input type="date" id="bimTanggal" required
+                        style="background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Jenis
+                        Kegiatan</label>
+                    <select id="bimJenis" required
+                        style="background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                        <option value="Bimbingan Laporan">Bimbingan Laporan</option>
+                        <option value="Monitoring PKL">Monitoring PKL</option>
+                        <option value="Penjemputan PKL">Penjemputan PKL</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Deskripsi
+                        / Pembahasan</label>
+                    <textarea id="bimDeskripsi" required
+                        style="width: 100%; min-height: 100px; padding: 1rem; border: 1px solid var(--glass-border); border-radius: 1rem; font-family: inherit; background: var(--glass-bg); color: var(--text-main);"></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Bukti
+                        Foto (Opsional)</label>
+                    <div style="display: flex; gap: 1.25rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <div id="bimPhotoPreview"
+                            style="width: 80px; height: 80px; background: var(--glass-bg); border-radius: 1rem; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed var(--glass-border); flex-shrink: 0;">
+                            <span style="color: var(--text-muted); font-size: 0.75rem;">FOTO</span>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="file" id="bimPhotoInput" accept="image/*"
+                                style="margin-bottom: 0.25rem; color: var(--text-muted); font-size: 0.8rem; width: 100%;">
+                            <p style="font-size: 0.7rem; color: var(--primary-light);">Format: JPG, PNG (Max 5MB)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn glass" onclick="toggleBimbinganModal(false)"
+                        style="flex: 1;">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveBimbingan" style="flex: 2;">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Tambah/Edit Lokasi -->
+    <div id="addLocationModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center; z-index: 1000; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass-card"
+            style="width: 95%; max-width: 700px; padding: 2.5rem; position: relative; max-height: 95vh; overflow-y: auto;">
+            <button class="btn-close" onclick="toggleAddLocationModal(false)"
+                style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 id="locationModalTitle" style="margin-bottom: 2rem; color: var(--text-main); font-weight: 700;">Tambah
+                Lokasi PKL Baru</h3>
+            <form id="addLocationForm">
+                <input type="hidden" id="locOriginalId">
+                <input type="hidden" id="locIdPkl">
+                <input type="hidden" id="locLat">
+                <input type="hidden" id="locLng">
+
+                <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="form-group">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Nama
+                            Tempat</label>
+                        <input type="text" id="locNamaTempat" required
+                            style="background: rgba(255, 255, 255, 0.07); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                    </div>
+                    <div class="form-group">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Nama
+                            Pimpinan</label>
+                        <input type="text" id="locNamaPimpinan" required
+                            style="background: rgba(255, 255, 255, 0.07); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Alamat</label>
+                    <textarea id="locAlamat" required
+                        style="width: 100%; min-height: 100px; padding: 1rem; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 1rem; font-family: inherit; background: rgba(255, 255, 255, 0.07); color: var(--text-main);"
+                        placeholder="Ketik alamat lengkap..."></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="form-group">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Nama
+                            Mentor (DUDI)</label>
+                        <input type="text" id="locNamaMentor" required
+                            style="background: rgba(255, 255, 255, 0.07); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                    </div>
+                    <div class="form-group">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Kontak
+                            Mentor</label>
+                        <div style="display:flex; align-items:center;">
+                            <span
+                                style="background: rgba(255, 255, 255, 0.07); padding:0.75rem; border:1px solid rgba(255, 255, 255, 0.15); border-right:none; border-radius:0.75rem 0 0 0.75rem; color: var(--text-main);">+62</span>
+                            <input type="text" id="locKontakMentor"
+                                style="border-radius:0 0.75rem 0.75rem 0; background: rgba(255, 255, 255, 0.07); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.75rem; width: 100%;"
+                                placeholder="8123456789" oninput="this.value = this.value.replace(/^0/, '')">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="form-group">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Jurusan</label>
+                        <select id="locJurusan" required
+                            style="background: rgba(255, 255, 255, 0.07); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                            <option value="">Pilih Jurusan</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Bidang
+                            Usaha</label>
+                        <input type="text" id="locBidangUsaha"
+                            placeholder="Contoh: Teknologi Informasi, Konstruksi, dll."
+                            style="background: rgba(255, 255, 255, 0.07); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                    </div>
+                </div>
+
+                <!-- Map Section -->
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label
+                        style="display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">
+                        <span>Pilih Lokasi di Peta</span>
+                        <span id="coordsDisplay"
+                            style="font-size: 0.75rem; color: var(--text-muted); text-transform: none;">Klik pada peta
+                            untuk mengambil koordinat</span>
+                    </label>
+                    <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; margin-top: 0.5rem;">
+                        <input type="text" id="mapSearchInput" placeholder="Cari alamat (Contoh: Malang)..."
+                            style="flex: 1; background: rgba(255, 255, 255, 0.07); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem; padding: 0.75rem;">
+                        <button type="button" class="btn btn-primary" onclick="searchAddress()"
+                            style="width: auto; height: 42px; padding: 0.6rem 1.2rem;" title="Cari Alamat"><i
+                                class="fas fa-search"></i></button>
+                    </div>
+                    <div id="locationMap"
+                        style="height: 250px; width: 100%; border-radius: 0.75rem; border: 1px solid var(--glass-border); z-index: 1;">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1.25rem; margin-top: 2.5rem;">
+                    <button type="button" class="btn glass" onclick="toggleAddLocationModal(false)"
+                        style="flex: 1;">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveLocation" style="flex: 2;">Simpan
+                        Lokasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Lihat Data Lokasi -->
+    <div id="viewLocationModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center; z-index: 1000; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass-card"
+            style="width: 95%; max-width: 800px; padding: 0; border-radius: var(--radius); position: relative; max-height: 95vh; display: flex; flex-direction: column; overflow: hidden;">
+            <!-- Fixed Header -->
+            <div style="padding: 2.5rem 2.5rem 1rem 2.5rem; border-bottom: 1px solid var(--glass-border);">
+                <button class="btn-close" onclick="toggleViewLocationModal(false)"
+                    style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+                <h3
+                    style="margin-bottom: 1rem; color: var(--primary); display: flex; align-items: center; gap: 0.75rem; font-weight: 700;">
+                    <i class="fas fa-building"></i> Detail Lokasi PKL
+                </h3>
+            </div>
+            <!-- Scrollable Content -->
+            <div id="viewLocationContent"
+                style="padding: 1.5rem 2.5rem; overflow-y: auto; flex: 1; color: var(--text-main);">
+                <!-- Rich content with Map injected -->
+            </div>
+            <!-- Fixed Footer -->
+            <div
+                style="padding: 1.5rem 2.5rem 2.5rem 2.5rem; text-align: right; border-top: 1px solid var(--glass-border);">
+                <button class="btn btn-primary" onclick="toggleViewLocationModal(false)"
+                    style="width: auto; padding: 0.75rem 2rem;">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tambah/Edit Siswa -->
+    <div id="addStudentModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center; z-index: 1000; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass-card"
+            style="width: 95%; max-width: 600px; padding: 2.5rem; position: relative; max-height: 90vh; overflow-y: auto;">
+            <button class="btn-close" onclick="toggleAddStudentModal(false)"
+                style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div>
+                    <h3 id="studentModalTitle" style="margin: 0; color: var(--text-main); font-weight: 700;">Data Siswa
+                    </h3>
+                    <p style="margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--text-muted);">Lengkapi formulir di
+                        bawah ini.</p>
+                </div>
+                <button type="button" onclick="toggleAddStudentModal(false)"
+                    style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="addStudentForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <input type="hidden" id="stuOriginalId">
+
+                <div
+                    style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div
+                        style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); font-weight: 700; margin-bottom: 1.25rem;">
+                        <i class="fas fa-user-circle" style="margin-right: 0.5rem;"></i> Biodata Siswa
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Nama
+                                Lengkap</label>
+                            <input type="text" id="stuNama" required
+                                style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.75rem; color: #fff;">
+                        </div>
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">NIS</label>
+                            <input type="text" id="stuNis" required
+                                style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.75rem; color: #fff;">
+                        </div>
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Jurusan</label>
+                            <select id="stuJurusan" required disabled
+                                style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.75rem; color: #fff;">
+                                <option value="">Jurusan</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Kelas</label>
+                            <input type="text" id="stuKelas" required
+                                style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.75rem; color: #fff;">
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div
+                        style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 700; margin-bottom: 1.25rem;">
+                        <i class="fas fa-building" style="margin-right: 0.5rem;"></i> Penempatan PKL
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Tempat
+                                PKL</label>
+                            <select id="stuIdPkl"
+                                style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.75rem; color: #fff;">
+                                <option value="">Belum Memilih PKL</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block;">Guru
+                                Pembimbing</label>
+                            <select id="stuIdGuru"
+                                style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.75rem; color: #fff;">
+                                <option value="">Belum Ada Pembimbing</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                    <button type="button" class="btn glass" onclick="toggleAddStudentModal(false)"
+                        style="padding: 0.6rem 1.5rem;">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveStudent"
+                        style="padding: 0.6rem 2rem;">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Lihat Data Siswa -->
+    <div id="viewStudentModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center; z-index: 1000; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass-card"
+            style="width: 95%; max-width: 900px; padding: 0; border-radius: var(--radius); position: relative; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+            <!-- Fixed Header -->
+            <div style="padding: 2.5rem 2.5rem 1rem 2.5rem; border-bottom: 1px solid var(--glass-border);">
+                <button class="btn-close" onclick="toggleViewStudentModal(false)"
+                    style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+                <h3
+                    style="margin-bottom: 1rem; color: var(--primary); display: flex; align-items: center; gap: 0.75rem; font-weight: 700;">
+                    <i class="fas fa-id-card"></i> Detail Lengkap profil Siswa
+                </h3>
+            </div>
+            <!-- Scrollable Content -->
+            <div id="viewStudentContent"
+                style="padding: 1.5rem 2.5rem; overflow-y: auto; flex: 1; color: var(--text-main);">
+                <!-- Rich content injected by openViewStudent -->
+            </div>
+            <!-- Fixed Footer -->
+            <div
+                style="padding: 1.5rem 2.5rem 2.5rem 2.5rem; text-align: right; border-top: 1px solid var(--glass-border);">
+                <button class="btn btn-primary" onclick="toggleViewStudentModal(false)"
+                    style="width: auto; padding: 0.75rem 2rem;">Tutup Detail</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Aksi Pengajuan PKL (Unified) -->
+    <div id="actionApplicationModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center; z-index: 1001; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass-card" style="width: 95%; max-width: 450px; padding: 2.5rem; position: relative;">
+            <button class="btn-close" onclick="toggleApplicationActionModal(false)"
+                style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 style="margin-bottom: 2.5rem; color: var(--text-main); font-weight: 700;">Konfirmasi Pengajuan</h3>
+            <form id="actionApplicationForm">
+                <input type="hidden" id="actionApplicationId">
+                <div style="margin-bottom: 2rem; text-align: center;">
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Siswa:</p>
+                    <p id="displayAppStudent" style="font-weight: 700; font-size: 1.2rem; color: var(--text-main);"></p>
+                    <p id="displayAppLocation"
+                        style="font-size: 0.9rem; margin-top: 0.25rem; color: var(--text-muted);"></p>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Status
+                        Persetujuan</label>
+                    <select id="appActionStatus" required
+                        style="background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                        <option value="Disetujui">Setujui</option>
+                        <option value="Ditolak">Tolak</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Catatan
+                        / Alasan (Opsional untuk Setuju, Wajib untuk Tolak)</label>
+                    <textarea id="appActionReason" placeholder="Berikan catatan atau alasan penolakan..."
+                        style="width: 100%; min-height: 100px; padding: 1rem; border: 1px solid var(--glass-border); border-radius: 1rem; font-family: inherit; background: var(--glass-bg); color: var(--text-main);"></textarea>
+                </div>
+                <div style="display: flex; gap: 1.25rem; margin-top: 2.5rem;">
+                    <button type="button" class="btn glass" onclick="toggleApplicationActionModal(false)"
+                        style="flex: 1;">Batal</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 2;">Simpan Konfirmasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detail Pengajuan -->
+    <div id="viewApplicationModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center; z-index: 1000; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass-card"
+            style="width: 90%; max-width: 600px; padding: 2.5rem; border-radius: var(--radius); position: relative;">
+            <button class="btn-close" onclick="toggleViewApplicationModal(false)"
+                style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 style="margin-bottom: 2rem; color: var(--text-main); font-weight: 700;">Detail Pengajuan PKL</h3>
+            <div id="viewApplicationContent" style="color: var(--text-main);"></div>
+            <div style="margin-top: 2.5rem; text-align: right;">
+                <button class="btn btn-primary" onclick="toggleViewApplicationModal(false)"
+                    style="width: auto; padding: 0.6rem 2rem;">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detail Kehadiran (Rich Version) -->
+    <div id="viewAttendanceModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center; z-index: 1000; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass-card"
+            style="width: 95%; max-width: 800px; padding: 2.5rem; position: relative; max-height: 90vh; overflow-y: auto;">
+            <button class="btn-close" onclick="toggleAttendanceModal(false)"
+                style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 style="margin-bottom: 2.5rem; color: var(--text-main); font-weight: 700;">Detail Kehadiran & Jurnal</h3>
+            <div id="viewAttendanceContent" style="color: var(--text-main);">
+                <!-- Data injected dynamically -->
+            </div>
+            <div style="margin-top: 2.5rem; text-align: right;">
+                <button class="btn btn-primary" onclick="toggleAttendanceModal(false)"
+                    style="width: auto; padding: 0.6rem 2rem;">Tutup Detail</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Aksi Judul Laporan -->
+    <div id="actionReportTitleModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center; z-index: 1000; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass-card"
+            style="width: 90%; max-width: 500px; padding: 2.5rem; border-radius: var(--radius); position: relative;">
+            <button class="btn-close" onclick="toggleReportTitleModal(false)"
+                style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 style="margin-bottom: 2rem; color: var(--text-main); font-weight: 700;">Konfirmasi Judul Laporan</h3>
+            <form id="actionReportTitleForm">
+                <input type="hidden" id="actionReportTitleId">
+                <div
+                    style="margin-bottom: 1.5rem; background: var(--glass-bg); padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--glass-border);">
+                    <div
+                        style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 600;">
+                        Judul yang
+                        Diajukan:</div>
+                    <div id="displayReportTitle"
+                        style="font-weight: 600; line-height: 1.4; color: var(--text-main); font-size: 1.1rem;"></div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Status
+                        Persetujuan</label>
+                    <select id="reportTitleStatus" required
+                        style="background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.75rem; width: 100%;">
+                        <option value="Disetujui">Setujui</option>
+                        <option value="Revisi">Minta Revisi</option>
+                        <option value="Ditolak">Tolak</option>
+                    </select>
+                </div>
+                <label>Feedback / Catatan</label>
+                <textarea id="reportTitleFeedback" placeholder="Berikan alasan atau arahan revisi..."
+                    style="width: 100%; min-height: 100px; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-family: inherit; margin-top: 0.5rem;"></textarea>
+        </div>
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="button" class="btn" onclick="toggleReportTitleModal(false)"
+                style="background: #e2e8f0; flex: 1;">Batal</button>
+            <button type="submit" class="btn btn-primary" style="flex: 2;">Simpan Perubahan</button>
+        </div>
+        </form>
+    </div>
+    </div>
+
+    <!-- Modal Lihat Data Lokasi -->
+    <div id="viewLocationModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index: 1000; grid-column: 1 / -1; grid-row: 1 / -1;">
+        <div class="glass"
+            style="width: 95%; max-width: 800px; padding: 0; border-radius: var(--radius); position: relative; max-height: 95vh; display: flex; flex-direction: column; overflow: hidden;">
+            <!-- Fixed Header -->
+            <div style="padding: 2.5rem 2.5rem 1rem 2.5rem; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                <button class="btn-close" onclick="toggleViewLocationModal(false)"
+                    style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+                <h3
+                    style="margin-bottom: 1rem; color: var(--primary); display: flex; align-items: center; gap: 0.75rem;">
+                    <i class="fas fa-building"></i> Detail Lokasi PKL
+                </h3>
+            </div>
+            <!-- Scrollable Content -->
+            <div id="viewLocationContent" style="padding: 1.5rem 2.5rem; overflow-y: auto; flex: 1;">
+                <!-- Rich content with Map injected -->
+            </div>
+            <!-- Fixed Footer -->
+            <div
+                style="padding: 1.5rem 2.5rem 2.5rem 2.5rem; text-align: right; border-top: 1px solid rgba(0,0,0,0.05);">
+                <button class="btn btn-primary" onclick="toggleViewLocationModal(false)"
+                    style="width: auto; padding: 0.75rem 2rem;">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .detail-item {
+            margin-bottom: 1rem;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .badge-warning {
+            background: #fef9c3;
+            color: #ca8a04;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        @media screen and (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // --- BIMBINGAN & MONITORING LOGIC ---
+        async function loadBimbinganData() {
+            const container = document.getElementById('bimbinganDataContainer');
+            container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>';
+
+            try {
+                const [bimRes, stuRes] = await Promise.all([
+                    API.getData('BIMBINGAN'),
+                    API.getData('DATASISWA')
+                ]);
+
+                if (bimRes.status !== 'success' || stuRes.status !== 'success') throw new Error('Gagal mengambil data');
+
+                const deptStudents = stuRes.data.filter(s => s.jurusan === user.jurusan);
+                const deptNises = new Set(deptStudents.map(s => s.nis));
+
+                const data = bimRes.data
+                    .filter(b => deptNises.has(b.NIS))
+                    .sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+
+                window.currentBimbingan = data;
+                window.departmentStudentsData = deptStudents;
+
+                if (data.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">Belum ada data bimbingan untuk jurusan ' + user.jurusan + '.</div>';
+                    return;
+                }
+
+                renderBimbingan(data);
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--danger);">Gagal memuat data.</div>';
+            }
+        }
+
+        function renderBimbingan(data) {
+            const container = document.getElementById('bimbinganDataContainer');
+
+            container.innerHTML = `<div class="card-grid">` + data.map(b => {
+                const student = window.departmentStudentsData.find(s => s.nis === b.NIS);
+                const isMonitoring = b.Jenis_keg === 'Monitoring PKL';
+
+                return `
+                    <div class="glass-card fade-in" style="padding: 1rem; border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                <div class="logo-circle" style="width: 36px; height: 36px; background: rgba(${isMonitoring ? 'var(--primary-rgb)' : '99, 102, 241'}, 0.08); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas ${isMonitoring ? 'fa-video' : 'fa-clipboard-check'}" style="color: ${isMonitoring ? 'var(--primary)' : '#6366f1'}; font-size: 1rem;"></i>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; line-height: 1.2;">${student ? student.nama : b.NIS}</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">${formatDate(b.Tanggal)}</div>
+                                </div>
+                            </div>
+                            <span style="font-size: 0.65rem; padding: 2px 8px; border-radius: 6px; background: ${isMonitoring ? 'rgba(var(--primary-rgb), 0.1)' : 'rgba(99, 102, 241, 0.1)'}; color: ${isMonitoring ? 'var(--primary)' : '#6366f1'}; font-weight: 700; border: 1px solid currentColor; white-space: nowrap;">${b.Jenis_keg}</span>
+                        </div>
+
+                        <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.4; opacity: 0.85; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.4rem;">
+                            ${b.Deskripsi}
+                        </div>
+
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                            <button class="btn glass" style="flex: 1; padding: 0.5rem; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem; border-radius: 0.6rem;" onclick="viewBimbinganDetail('${b.ID_BIMBINGAN}')">
+                                <i class="fas fa-eye"></i> Detail
+                            </button>
+                            <button class="btn" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); color: var(--danger); border-radius: 0.6rem; padding: 0;" onclick="deleteBimbingan('${b.ID_BIMBINGAN}')" title="Hapus">
+                                <i class="fas fa-trash" style="font-size: 0.85rem;"></i>
+                            </button>
+                        </div>
+                    </div>`;
+            }).join('') + `</div>`;
+        }
+
+        function toggleBimbinganModal(show) {
+            const modal = document.getElementById('bimbinganModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+            if (!show) {
+                document.getElementById('bimbinganForm').reset();
+                document.getElementById('bimPhotoPreview').innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem;">FOTO</span>';
+                document.getElementById('bimPhotoUrl').value = '';
+                document.getElementById('selectedCountDisplay').textContent = 'Pilih minimal satu siswa';
+                document.getElementById('selectedStudentsList').innerHTML = '';
+                document.getElementById('studentDropdownMenu').classList.add('hidden');
+                document.getElementById('studentSearchInput').value = '';
+            }
+        }
+
+        function toggleStudentDropdown(e) {
+            if (e) e.stopPropagation();
+            const menu = document.getElementById('studentDropdownMenu');
+            menu.classList.toggle('hidden');
+            if (!menu.classList.contains('hidden')) {
+                document.getElementById('studentSearchInput').focus();
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('studentDropdownMenu');
+            const trigger = document.getElementById('studentDropdownTrigger');
+            if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target) && !trigger.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        function updateSelectedCount() {
+            const checkedCheckboxes = Array.from(document.querySelectorAll('input[name="bimNis"]:checked'));
+            const nises = checkedCheckboxes.map(cb => cb.value);
+
+            const display = document.getElementById('selectedCountDisplay');
+            const listDisplay = document.getElementById('selectedStudentsList');
+
+            if (nises.length === 0) {
+                display.textContent = 'Pilih minimal satu siswa';
+                display.style.color = 'var(--text-muted)';
+                listDisplay.innerHTML = '';
+            } else {
+                display.textContent = `${nises.length} Siswa Terpilih`;
+                display.style.color = 'var(--text-main)';
+
+                // Show names below trigger
+                const selectedNames = checkedCheckboxes.map(cb => {
+                    const label = cb.nextElementSibling;
+                    return label ? label.textContent.split(' (')[0] : 'Siswa';
+                });
+
+                listDisplay.innerHTML = selectedNames.map(name => `
+                    <div style="background: rgba(var(--primary-rgb), 0.15); color: var(--primary-light); padding: 0.3rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; border: 1px solid rgba(var(--primary-rgb), 0.3); display: flex; align-items: center; gap: 0.4rem;">
+                        <i class="fas fa-check-circle" style="font-size: 0.7rem;"></i> ${name}
+                    </div>
+                `).join('');
+            }
+        }
+
+        function filterStudentList() {
+            const query = document.getElementById('studentSearchInput').value.toLowerCase();
+            const items = document.querySelectorAll('.student-item');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        async function openBimbinganModal() {
+            toggleBimbinganModal(true);
+            document.getElementById('bimbinganModalTitle').textContent = 'Input Kegiatan Bimbingan';
+            document.getElementById('bimId').value = '';
+
+            const checklist = document.getElementById('bimNisChecklist');
+            checklist.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i></div>';
+
+            try {
+                if (!window.departmentStudentsData) {
+                    const res = await API.getData('DATASISWA');
+                    window.departmentStudentsData = res.data.filter(s => s.jurusan === user.jurusan);
+                }
+
+                checklist.innerHTML = window.departmentStudentsData.map(s => `
+                    <div class="student-item" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; cursor: pointer; border-radius: 0.6rem; transition: background 0.2s;" onclick="this.querySelector('input').click()">
+                        <input type="checkbox" name="bimNis" value="${s.nis}" id="chk_${s.nis}" 
+                            style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary); filter: drop-shadow(0 0 5px rgba(var(--primary-rgb), 0.3));" 
+                            onclick="event.stopPropagation(); updateSelectedCount()" onchange="updateSelectedCount()">
+                        <label for="chk_${s.nis}" style="font-size: 0.85rem; cursor: pointer; flex: 1; color: var(--text-main);">${s.nama} (${s.nis})</label>
+                    </div>
+                `).join('');
+
+                // Style student items on hover
+                const style = document.createElement('style');
+                style.textContent = `.student-item:hover { background: rgba(255,255,255,0.05); }`;
+                document.head.appendChild(style);
+
+            } catch (err) {
+                checklist.innerHTML = '<div style="color: var(--danger); font-size: 0.8rem; padding: 1rem;">Gagal memuat daftar siswa.</div>';
+            }
+        }
+
+        document.getElementById('bimPhotoInput').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const preview = document.getElementById('bimPhotoPreview');
+            preview.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                const compressed = await API.compressImage(file);
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    preview.innerHTML = `<img src="${event.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+                };
+                reader.readAsDataURL(compressed);
+                const res = await API.uploadFile(compressed);
+                if (res.status === 'success') document.getElementById('bimPhotoUrl').value = res.url;
+                else throw new Error('Upload gagal');
+            } catch (err) {
+                showToast('Gagal proses foto', 'danger');
+                preview.innerHTML = '<span style="color: var(--danger);">Error</span>';
+            }
+        };
+
+        document.getElementById('bimbinganForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveBimbingan');
+            const nises = Array.from(document.querySelectorAll('input[name="bimNis"]:checked')).map(cb => cb.value);
+
+            if (nises.length === 0) return showToast('Pilih minimal satu siswa', 'warning');
+
+            btn.disabled = true;
+            btn.textContent = 'Menyimpan...';
+
+            try {
+                const results = await Promise.all(nises.map(nis => {
+                    const payload = {
+                        NIS: nis,
+                        Tanggal: document.getElementById('bimTanggal').value,
+                        Jenis_keg: document.getElementById('bimJenis').value,
+                        Deskripsi: document.getElementById('bimDeskripsi').value,
+                        Photo: document.getElementById('bimPhotoUrl').value
+                    };
+                    return API.postData('BIMBINGAN', payload);
+                }));
+
+                if (results.every(r => r.status === 'success')) {
+                    showToast('Kegiatan berhasil disimpan!', 'success');
+                    toggleBimbinganModal(false);
+                    loadBimbinganData();
+                } else {
+                    showToast('Beberapa data gagal disimpan', 'warning');
+                }
+            } catch (err) {
+                showToast('Kesalahan sistem', 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Simpan';
+            }
+        };
+
+        function viewBimbinganDetail(id) {
+            const b = window.currentBimbingan.find(item => item.ID_BIMBINGAN === id);
+            if (!b) return;
+
+            const student = window.departmentStudentsData ? window.departmentStudentsData.find(s => s.nis === b.NIS) : null;
+            const content = document.getElementById('viewBimbinganContent');
+            content.innerHTML = `
+                <div style="display: grid; gap: 1rem;">
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 0.5rem; border-left: 4px solid var(--primary);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Siswa</div>
+                        <div style="font-weight: 600; font-size: 1.1rem;">${student ? student.nama : b.NIS}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">NIS: ${b.NIS}</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <strong style="color:var(--text-muted); font-size:0.75rem; display:block;">TANGGAL</strong>
+                            <div>${formatDate(b.Tanggal)}</div>
+                        </div>
+                        <div>
+                            <strong style="color:var(--text-muted); font-size:0.75rem; display:block;">JENIS KEGIATAN</strong>
+                            <span class="badge" style="background:var(--primary); color:white; padding:0.2rem 0.5rem; border-radius:1rem; font-size:0.7rem;">${b.Jenis_keg}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <strong style="color:var(--text-muted); font-size:0.75rem; display:block;">DESKRIPSI / PEMBAHASAN</strong>
+                        <div style="background:rgba(0,0,0,0.2); padding:0.75rem; border-radius:0.5rem; font-size:0.9rem; line-height:1.5; border: 1px solid var(--glass-border);">${b.Deskripsi}</div>
+                    </div>
+                    <div>
+                        <strong style="color:var(--text-muted); font-size:0.75rem; display:block;">BUKTI FOTO</strong>
+                        ${(b.Photo || b.photo) ? `<img src="${getDriveThumbnail(b.Photo || b.photo)}" style="width:100%; border-radius:0.5rem; margin-top:0.5rem; border:1px solid #e2e8f0;" onerror="this.src='https://placehold.co/400x300?text=Foto+Gagal+Dimuat'">` : '<div style="padding:1rem; background:#f1f5f9; border-radius:0.5rem; text-align:center; color:var(--text-muted); font-size:0.8rem;">Tidak ada foto</div>'}
+                    </div>
+                </div>
+            `;
+            toggleViewBimbinganModal(true);
+        }
+
+        function toggleViewBimbinganModal(show) {
+            const modal = document.getElementById('viewBimbinganModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        async function deleteBimbingan(id) {
+            if (!confirm('Yakin ingin menghapus data bimbingan ini?')) return;
+            try {
+                const res = await API.deleteData('BIMBINGAN', id);
+                if (res.status === 'success') {
+                    showToast('Data dihapus', 'success');
+                    loadBimbinganData();
+                } else throw new Error(res.error);
+            } catch (err) {
+                showToast('Gagal menghapus: ' + err.message, 'danger');
+            }
+        }
+        // Kakomli specific user context
+        const user = AUTH.checkSession('kakomli');
+        if (!user) window.location.href = '../index.html';
+
+        let locMap, locMarker;
+
+        const showToast = (msg, type) => API.showNotification(msg, type === 'danger' ? 'error' : type);
+
+        function updateUserUI() {
+            const user = AUTH.getUser();
+            if (!user) return;
+
+            // Update names
+            document.querySelectorAll('#userName').forEach(el => el.textContent = user.nama);
+            const welcomeName = document.getElementById('welcomeName');
+            if (welcomeName) welcomeName.innerHTML = user.nama;
+
+            // Update avatars
+            const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nama)}&background=random&color=fff`;
+            const avatarUrl = user.photo ? getDriveThumbnail(user.photo) : fallbackAvatar;
+
+            const avatars = ['userAvatar', 'headerAvatar', 'profViewAvatar', 'profModalAvatar'];
+            avatars.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.onerror = () => { el.src = fallbackAvatar; };
+                    el.src = avatarUrl;
+                    el.style.display = 'block';
+                }
+            });
+
+            // Toggle placeholders
+            const headerPlaceholder = document.getElementById('headerAvatarPlaceholder');
+            if (headerPlaceholder) headerPlaceholder.style.display = 'none';
+
+            if (typeof updateGreeting === 'function') updateGreeting();
+        }
+
+        function updateGreeting() {
+            const text = document.getElementById('greetingText');
+            if (!text) return;
+            const hour = new Date().getHours();
+            let g = 'Selamat Malam';
+            if (hour < 11) g = 'Selamat Pagi';
+            else if (hour < 15) g = 'Selamat Siang';
+            else if (hour < 19) g = 'Selamat Sore';
+            text.innerHTML = `${g}! 👋`;
+        }
+        updateUserUI();
+
+        function getDriveThumbnail(photoId) {
+            if (!photoId) return null;
+            if (photoId.startsWith('http')) return photoId;
+            let id = photoId;
+            if (photoId.includes('id=')) id = photoId.split('id=')[1].split('&')[0];
+            else if (photoId.includes('/d/')) id = photoId.split('/d/')[1].split('/')[0];
+            return `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
+        }
+
+        // Helper functions from admin.html
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return dateStr;
+                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+            } catch (e) { return dateStr; }
+        }
+
+        function formatWhatsApp(number) {
+            if (!number || number === '-') return '-';
+            let clean = number.toString().replace(/\D/g, '');
+            if (!clean) return number;
+            if (clean.startsWith('0')) clean = '62' + clean.substring(1);
+            if (!clean.startsWith('62')) clean = '62' + clean;
+            return `<a href="https://wa.me/${clean}" target="_blank" style="color: #25D366; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;" title="Chat WhatsApp"><i class="fab fa-whatsapp"></i> ${number}</a>`;
+        }
+
+        async function loadDashboardStats() {
+            try {
+                const [allStudents, locations, applications] = await Promise.all([
+                    API.getData('DATASISWA'),
+                    API.getData('LOKASIPKL'),
+                    API.getData('PENGAJUANPKL')
+                ]);
+
+                // Filter data by Kakomli's department
+                const deptStudents = (allStudents.data || []).filter(s => s.jurusan === user.jurusan);
+                const deptLocations = (locations.data || []).filter(l => l.Jurusan === user.jurusan);
+                const deptApps = (applications.data || []).filter(a => a.Jurusan === user.jurusan);
+
+                document.getElementById('count-students').textContent = deptStudents.length;
+                document.getElementById('count-locations').textContent = deptLocations.length;
+                document.getElementById('count-app-approved').textContent = deptApps.filter(a => a.Status === 'Disetujui').length;
+                document.getElementById('count-app-pending').textContent = deptApps.filter(a => a.Status === 'Pending' || !a.Status).length;
+            } catch (err) { console.error('Error loading dashboard stats:', err); }
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            const section = document.getElementById('section-' + sectionId);
+            if (section) {
+                section.classList.remove('hidden');
+                section.classList.add('fade-in');
+            }
+
+            // Navigation Active states
+            document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav-link').forEach(a => a.classList.remove('active'));
+
+            const navId = 'nav-' + sectionId;
+            if (document.getElementById(navId)) document.getElementById(navId).classList.add('active');
+
+            const bnavId = 'bnav-' + sectionId;
+            if (document.getElementById(bnavId)) document.getElementById(bnavId).classList.add('active');
+
+            // Mobile Sidebar Auto-close
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && sidebar.classList.contains('active') && window.innerWidth <= 1024) {
+                toggleMobileSidebar();
+            }
+
+            const titles = {
+                dashboard: 'Overview Jurusan',
+                locations: 'Kelola Lokasi PKL (' + user.jurusan + ')',
+                students: 'Data Siswa (' + user.jurusan + ')',
+                applications: 'Pengajuan PKL Siswa',
+                attendance: 'Monitoring Kehadiran',
+                'report-title': 'Pengajuan Judul Laporan',
+                bimbingan: 'Bimbingan & Monitoring PKL',
+                profile: 'Profil Saya'
+            };
+            document.getElementById('sectionTitle').textContent = titles[sectionId] || 'Panel Kakomli';
+
+            // Data loading logic
+            if (sectionId === 'dashboard') loadDashboardStats();
+            if (sectionId === 'locations') loadLocations();
+            if (sectionId === 'students') loadStudents();
+            if (sectionId === 'applications') loadApplications();
+            if (sectionId === 'attendance') loadAttendance();
+            if (sectionId === 'report-title') loadReportTitles();
+            if (sectionId === 'bimbingan') loadBimbinganData();
+            if (sectionId === 'profile') {
+                switchProfileState('view');
+                openProfileDetails();
+            }
+        }
+
+        // ==========================================
+        // LOCATIONS MANAGEMENT
+        // ==========================================
+        async function loadLocations() {
+            const container = document.getElementById('locationDataContainer');
+            const isMobile = window.innerWidth <= 768;
+            container.innerHTML = '<div style="text-align:center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>';
+
+            try {
+                const response = await API.getData('LOKASIPKL');
+                const deptLocations = (response.data || []).filter(l => l.Jurusan === user.jurusan);
+
+                if (deptLocations.length > 0) {
+                    window.locationData = deptLocations;
+                    if (isMobile) {
+                        container.innerHTML = `<div class="card-grid">` + deptLocations.map(l => `
+                            <div class="glass-card fade-in" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; border: 1px solid var(--glass-border);">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                        <div class="logo-circle" style="width: 40px; height: 40px; background: rgba(var(--accent-rgb), 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-map-marker-alt" style="color: var(--accent); font-size: 1.1rem;"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">${l.NamaTempat}</div>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${l.Jurusan || '-'}</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge badge-success">Aktif</span>
+                                </div>
+
+                                <div style="display: grid; gap: 0.75rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 1rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <i class="fas fa-map" style="width: 16px; color: var(--primary-light); font-size: 0.85rem;"></i>
+                                        <div style="font-size: 0.85rem; color: var(--text-main);">${l.Alamat}</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <i class="fas fa-user-tie" style="width: 16px; color: var(--primary); font-size: 0.85rem;"></i>
+                                        <div style="font-size: 0.85rem; color: var(--text-main);">${l.NamaMentor}</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <i class="fab fa-whatsapp" style="width: 16px; color: #25D366; font-size: 0.85rem;"></i>
+                                        <div style="font-size: 0.85rem; color: var(--text-main);">${l.KontakMentor || '-'}</div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                                    <button class="btn" style="flex: 1; padding: 0.6rem; background: rgba(var(--primary-rgb), 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.75rem;" onclick="openViewLocation('${l.ID_PKL}')">
+                                        <i class="fas fa-eye"></i> Lihat
+                                    </button>
+                                    <button class="btn" style="flex: 1; padding: 0.6rem; background: rgba(245, 158, 11, 0.1); color: #ca8a04; display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.75rem;" onclick="openEditLocation('${l.ID_PKL}')">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button class="btn" style="flex: 1; padding: 0.6rem; background: rgba(239, 68, 68, 0.1); color: var(--danger); display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.75rem;" onclick="deleteLocation('${l.ID_PKL}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('') + `</div>`;
+                    } else {
+                        container.innerHTML = `
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                            <th style="padding: 1rem;">Nama Tempat & Alamat</th>
+                                            <th style="padding: 1rem;">Mentor & Kontak</th>
+                                            <th style="padding: 1rem;">Jurusan</th>
+                                            <th style="padding: 1rem;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="locationTableBody"></tbody>
+                                </table>
+                            </div>`;
+                        const tbody = document.getElementById('locationTableBody');
+                        deptLocations.forEach(l => {
+                            const tr = document.createElement('tr');
+                            tr.style.borderBottom = '1px solid #f1f5f9';
+                            tr.innerHTML = `
+                                <td style="padding: 1.25rem 1rem;">
+                                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${l.NamaTempat}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; display: block; max-width: 300px;">${l.Alamat}</div>
+                                </td>
+                                <td style="padding: 1rem;">
+                                    <div style="font-weight: 600; color: #fff; font-size: 0.9rem;">${l.NamaMentor}</div>
+                                    <div style="font-size: 0.75rem; color: var(--electric-blue); font-weight: 600;">${l.KontakMentor || '-'}</div>
+                                </td>
+                                <td style="padding: 1rem; font-weight: 700; font-size: 0.8rem; color: var(--accent); opacity: 0.9;">${l.Jurusan || '-'}</td>
+                                <td style="padding: 1rem; text-align: right; padding-right: 1rem;">
+                                    <div class="table-actions" style="justify-content: flex-end;">
+                                        <button class="action-btn view" onclick="openViewLocation('${l.ID_PKL}')" title="Lihat"><i class="fas fa-eye"></i></button>
+                                        <button class="action-btn edit" onclick="openEditLocation('${l.ID_PKL}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete" onclick="deleteLocation('${l.ID_PKL}')" title="Hapus"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>`;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                } else { container.innerHTML = '<div style="text-align:center; padding: 2rem;">Tidak ada data untuk jurusan Anda.</div>'; }
+            } catch (err) { container.innerHTML = '<div style="text-align:center; color: var(--danger); padding: 2rem;">Gagal memuat data.</div>'; }
+        }
+
+        function toggleAddLocationModal(show) {
+            const modal = document.getElementById('addLocationModal');
+            if (show) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                // Lock Jurusan to Kakomli's dept
+                document.getElementById('locJurusan').innerHTML = `<option value="${user.jurusan}">${user.jurusan}</option>`;
+                document.getElementById('locJurusan').value = user.jurusan;
+                document.getElementById('locJurusan').disabled = true;
+
+                if (document.getElementById('locationModalTitle').textContent === 'Tambah Lokasi PKL Baru') {
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                    let mid = 'LOK-';
+                    for (let i = 0; i < 5; i++) mid += chars.charAt(Math.floor(Math.random() * chars.length));
+                    document.getElementById('locIdPkl').value = mid;
+                }
+                setTimeout(() => initLocationMap(), 100);
+            } else {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                document.getElementById('addLocationForm').reset();
+                document.getElementById('locationModalTitle').textContent = 'Tambah Lokasi PKL Baru';
+                document.getElementById('locOriginalId').value = '';
+                if (locMarker) { locMap.removeLayer(locMarker); locMarker = null; }
+            }
+        }
+
+        function initLocationMap() {
+            if (!locMap) {
+                locMap = L.map('locationMap').setView([-7.9666, 112.6326], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(locMap);
+                locMap.on('click', e => setMarker(e.latlng.lat.toFixed(7), e.latlng.lng.toFixed(7)));
+            } else locMap.invalidateSize();
+        }
+
+        function setMarker(lat, lng) {
+            if (locMarker) locMap.removeLayer(locMarker);
+            locMarker = L.marker([lat, lng]).addTo(locMap);
+            document.getElementById('locLat').value = lat;
+            document.getElementById('locLng').value = lng;
+            document.getElementById('coordsDisplay').textContent = `Terpilih: ${lat}, ${lng}`;
+            locMap.panTo([lat, lng]);
+        }
+
+        async function openViewLocation(idParam) {
+            const l = window.locationData.find(item => {
+                const idStr = (item.ID_PKL || item.id_pkl || "").toString();
+                return idStr === idParam.toString();
+            });
+            if (!l) return alert('Data lokasi tidak ditemukan.');
+
+            const content = document.getElementById('viewLocationContent');
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="detail-item">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Status</label>
+                        <span class="badge ${l.Status === 'Aktif' ? 'badge-success' : 'badge-warning'}">${l.Status || 'Aktif'}</span>
+                    </div>
+                    <div></div>
+                    <div class="detail-item" style="grid-column: span 2;">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Nama Tempat / Perusahaan</label>
+                        <div style="font-weight: 600; font-size: 1.1rem;">${l.NamaTempat}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Pimpinan</label>
+                        <div><i class="fas fa-user-tie" style="margin-right: 0.5rem; color: var(--primary);"></i>${l.NamaPimpinan || '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Bidang Usaha</label>
+                        <div><i class="fas fa-briefcase" style="margin-right: 0.5rem; color: var(--primary);"></i>${l.BidangUsaha || '-'}</div>
+                    </div>
+                    <div class="detail-item" style="grid-column: span 2;">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Alamat</label>
+                        <div><i class="fas fa-map-marker-alt" style="margin-right: 0.5rem; color: var(--primary);"></i>${l.Alamat}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Jurusan</label>
+                        <div><i class="fas fa-graduation-cap" style="margin-right: 0.5rem; color: var(--primary);"></i>${l.Jurusan || '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Mentor (DUDI)</label>
+                        <div><i class="fas fa-user" style="margin-right: 0.5rem; color: var(--primary);"></i>${l.NamaMentor}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Kontak Mentor</label>
+                        <div><i class="fab fa-whatsapp" style="margin-right: 0.5rem; color: #25D366;"></i>${formatWhatsApp(l.KontakMentor)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Email Industri</label>
+                        <div style="font-size: 0.85rem;"><i class="fas fa-envelope" style="margin-right: 0.5rem; color: #ef4444;"></i>${l.Email || '-'}</div>
+                    </div>
+                    <div class="detail-item" style="grid-column: span 2;">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Deskripsi Lokasi</label>
+                        <div><i class="fas fa-info-circle" style="margin-right: 0.5rem; color: var(--primary);"></i>${l.description || '-'}</div>
+                    </div>
+                </div>
+                ${(l.LAT && l.LNG) ? `
+                    <div style="grid-column: span 2; margin-top: 1rem;">
+                        <label style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.5rem;">Lokasi Presisi</label>
+                        <div id="viewMap" style="height: 250px; width: 100%; border-radius: 0.75rem; border: 1px solid #e2e8f0;"></div>
+                    </div>
+                ` : ''}
+            `;
+
+            toggleViewLocationModal(true);
+
+            if (l.LAT && l.LNG) {
+                setTimeout(() => {
+                    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap'
+                    });
+                    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: 'Tiles &copy; Esri'
+                    });
+
+                    const vMap = L.map('viewMap', {
+                        center: [l.LAT, l.LNG],
+                        zoom: 15,
+                        layers: [streetLayer]
+                    });
+
+                    const baseMaps = { "Jalan": streetLayer, "Satelit": satelliteLayer };
+                    L.control.layers(baseMaps).addTo(vMap);
+                    L.marker([l.LAT, l.LNG]).addTo(vMap);
+                }, 300);
+            }
+        }
+
+        function openEditLocation(id) {
+            const l = window.locationData.find(item => item.ID_PKL == id);
+            if (!l) return;
+            document.getElementById('locationModalTitle').textContent = 'Edit Lokasi PKL';
+            document.getElementById('locOriginalId').value = l.ID_PKL;
+            document.getElementById('locIdPkl').value = l.ID_PKL;
+            document.getElementById('locNamaTempat').value = l.NamaTempat;
+            document.getElementById('locNamaPimpinan').value = l.NamaPimpinan || '';
+            document.getElementById('locAlamat').value = l.Alamat;
+            document.getElementById('locNamaMentor').value = l.NamaMentor;
+            document.getElementById('locKontakMentor').value = l.KontakMentor ? l.KontakMentor.toString().replace('+62', '') : '';
+            document.getElementById('locBidangUsaha').value = l.BidangUsaha || '';
+            toggleAddLocationModal(true);
+            if (l.LAT && l.LNG) setTimeout(() => setMarker(l.LAT, l.LNG), 300);
+        }
+
+        document.getElementById('addLocationForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveLocation');
+            btn.disabled = true; btn.textContent = 'Menyimpan...';
+            const originalId = document.getElementById('locOriginalId').value;
+            const payload = {
+                ID_PKL: document.getElementById('locIdPkl').value,
+                NamaTempat: document.getElementById('locNamaTempat').value,
+                NamaPimpinan: document.getElementById('locNamaPimpinan').value,
+                Alamat: document.getElementById('locAlamat').value,
+                NamaMentor: document.getElementById('locNamaMentor').value,
+                KontakMentor: '+62' + document.getElementById('locKontakMentor').value,
+                Jurusan: user.jurusan,
+                BidangUsaha: document.getElementById('locBidangUsaha').value,
+                LAT: document.getElementById('locLat').value,
+                LNG: document.getElementById('locLng').value
+            };
+            try {
+                const res = originalId ? await API.updateData('LOKASIPKL', originalId, payload) : await API.addData('LOKASIPKL', payload);
+                if (res.status === 'success') { showToast('Berhasil disimpan!'); toggleAddLocationModal(false); loadLocations(); }
+                else alert('Gagal: ' + res.message);
+            } catch (err) { alert('Kesalahan jaringan'); }
+            finally { btn.disabled = false; btn.textContent = 'Simpan Lokasi'; }
+        };
+
+        async function deleteLocation(id) {
+            if (!confirm('Hapus lokasi ini?')) return;
+            try {
+                const res = await API.deleteData('LOKASIPKL', id);
+                if (res.status === 'success') { showToast('Berhasil dihapus'); loadLocations(); }
+                else alert('Gagal');
+            } catch (err) { alert('Kesalahan'); }
+        }
+
+        // ==========================================
+        // STUDENTS MANAGEMENT
+        // ==========================================
+        async function loadStudents() {
+            const tbody = document.getElementById('studentTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Memuat data...</td></tr>';
+            try {
+                const [stuRes, pklRes, locRes, guruRes, loginGuruRes] = await Promise.all([
+                    API.getData('DATASISWA'), API.getData('DATAPKL'), API.getData('LOKASIPKL'), API.getData('DATAGURU'), API.getData('LOGINGURU')
+                ]);
+                const deptStudents = (stuRes.data || []).filter(s => s.jurusan === user.jurusan);
+                tbody.innerHTML = '';
+                if (deptStudents.length > 0) {
+                    window.locationData = locRes.data; // Cache for history lookups
+                    deptStudents.sort((a, b) => a.nis.toString().localeCompare(b.nis.toString(), undefined, { numeric: true }));
+                    window.combinedStudentData = deptStudents.map(s => {
+                        const pklInfo = (pklRes.data || []).find(p => p.nis == s.nis);
+
+                        // Multi-location logic: use the latest assigned ID_PKL
+                        let currentIdPkl = null;
+                        if (pklInfo) {
+                            currentIdPkl = pklInfo.ID_PKL_3 || pklInfo.ID_PKL_2 || pklInfo.ID_PKL;
+                        }
+
+                        const loc = currentIdPkl ? (locRes.data || []).find(l => l.ID_PKL == currentIdPkl) : null;
+                        const guru = pklInfo ? (guruRes.data || []).find(g => g.ID_GURU == pklInfo.ID_GURU) : null;
+                        const loginG = guru ? (loginGuruRes.data || []).find(lg => lg.nama === guru.NamaGuru) : null;
+
+                        // Identify history for detail view
+                        const pklHistory = [];
+                        if (pklInfo) {
+                            if (pklInfo.ID_PKL) pklHistory.push(pklInfo.ID_PKL);
+                            if (pklInfo.ID_PKL_2) pklHistory.push(pklInfo.ID_PKL_2);
+                            if (pklInfo.ID_PKL_3) pklHistory.push(pklInfo.ID_PKL_3);
+                        }
+
+                        return {
+                            ...s,
+                            pkl: pklInfo,
+                            location: loc,
+                            currentIdPkl: currentIdPkl,
+                            pklHistory: pklHistory,
+                            guru: {
+                                name: guru ? guru.NamaGuru : (pklInfo ? 'Tidak Ditemukan' : 'Belum PKL'),
+                                contact: loginG ? loginG.kontak : '-'
+                            },
+                            startDate: pklInfo ? pklInfo.StartDate : '-',
+                            endDate: pklInfo ? pklInfo.EndDate : '-',
+                            statusLabel: currentIdPkl ? 'Aktif PKL' : 'Belum PKL',
+                            statusColor: currentIdPkl ? 'var(--success)' : 'var(--text-muted)'
+                        };
+                    });
+                    renderStudents(window.combinedStudentData);
+                } else tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Tidak ada data.</td></tr>';
+            } catch (err) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--danger); padding: 2rem;">Gagal memuat data.</td></tr>'; }
+        }
+
+        function exportToExcel() {
+            if (!window.combinedStudentData || window.combinedStudentData.length === 0) return showToast('Tidak ada data.', 'warning');
+            const data = window.combinedStudentData.map(s => ({
+                'NIS': s.nis, 'Nama': s.nama, 'Jurusan': s.jurusan, 'Kelas': s.kelas,
+                'Tempat PKL': s.location ? s.location.NamaTempat : '-',
+                'Guru Pembimbing': s.guru.name
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "DataSiswa");
+            XLSX.writeFile(wb, `Data_Siswa_${user.jurusan}.xlsx`);
+        }
+
+        function exportToPDF() {
+            if (!window.combinedStudentData || window.combinedStudentData.length === 0) return showToast('Tidak ada data.', 'warning');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            doc.text(`Daftar Siswa - ${user.jurusan}`, 14, 15);
+            const data = window.combinedStudentData.map(s => [s.nis, s.nama, s.kelas, s.location ? s.location.NamaTempat : '-', s.guru.name]);
+            doc.autoTable({ head: [['NIS', 'Nama', 'Kelas', 'Tempat PKL', 'Pembimbing']], body: data, startY: 20 });
+            doc.save(`Data_Siswa_${user.jurusan}.pdf`);
+        }
+
+        function downloadTemplate() {
+            const data = [{ 'nis': '0', 'nama': 'NAMA', 'nik': '0', 'jurusan': user.jurusan, 'kelas': 'XII', 'tempat_lahir': 'Bdg', 'tanggal_lahir': '2007-01-01', 'goldar': 'O', 'kontak': '0', 'nama_ortu': 'ORTU', 'kontak_ortu': '0' }];
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "FormatImport");
+            XLSX.writeFile(wb, "Format_Import_Siswa.xlsx");
+        }
+
+        function triggerImport() { document.getElementById('importFile').click(); }
+
+        function handleImport(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                showToast(`Mengimpor ${rows.length} data...`);
+                let success = 0;
+                for (const row of rows) {
+                    try { await API.updateData('DATASISWA', row.nis, { ...row }); success++; }
+                    catch (err) { console.error('Import failed:', row.nis, err); }
+                }
+                showToast(`Berhasil mengimpor ${success} data.`); loadStudents();
+            };
+            reader.readAsArrayBuffer(file); input.value = '';
+        }
+
+        function renderStudents(data) {
+            const container = document.getElementById('studentDataContainer');
+            container.innerHTML = `<div class="data-table-container"><table class="data-table"><thead><tr><th style="padding: 1rem;">Siswa</th><th style="padding: 1rem;">Kelas & Jurusan</th><th style="padding: 1rem;">Status PKL</th><th style="padding: 1rem; text-align: right; padding-right: 2rem;">Aksi</th></tr></thead><tbody id="studentTableBody"></tbody></table></div>`;
+            const tbody = document.getElementById('studentTableBody');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 3rem; color: var(--text-muted); opacity: 0.5;">Belum ada data siswa yang tersedia.</td></tr>';
+                return;
+            }
+            data.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td data-label="Siswa">
+                        <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${s.nama}</div>
+                        <div style="font-size: 0.75rem; color: var(--electric-blue); font-weight: 600; letter-spacing: 0.05em;">NIS: ${s.nis}</div>
+                    </td>
+                    <td data-label="Kelas">
+                        <div style="font-weight: 600; color: var(--text-main);">${s.kelas}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); opacity: 0.8;">${s.jurusan}</div>
+                    </td>
+                    <td data-label="Status PKL">
+                        <div style="font-size: 0.85rem; color: #fff; font-weight: 600;">${s.location ? s.location.NamaTempat : '<span style="color: var(--danger); font-style: italic;">Belum PKL</span>'}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${s.guru ? s.guru.name : '-'}</div>
+                    </td>
+                    <td data-label="Aksi" style="text-align: right; padding-right: 1.5rem;">
+                        <div class="table-actions" style="justify-content: flex-end;">
+                            <button class="action-btn view" onclick="openViewStudent('${s.nis}')" title="Lihat Detail"><i class="fas fa-eye"></i></button>
+                            <button class="action-btn edit" onclick="openEditStudent('${s.nis}')" title="Edit Data"><i class="fas fa-edit"></i></button>
+                        </div>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleAddStudentModal(show) {
+            const modal = document.getElementById('addStudentModal');
+            modal.style.display = show ? 'flex' : 'none';
+            if (show) {
+                modal.classList.remove('hidden');
+                document.getElementById('stuJurusan').innerHTML = `<option value="${user.jurusan}">${user.jurusan}</option>`;
+                document.getElementById('stuJurusan').value = user.jurusan;
+                loadPklOptions('stuIdPkl'); loadGuruOptions('stuIdGuru');
+            } else modal.classList.add('hidden');
+        }
+
+        async function loadPklOptions(selectId) {
+            const res = await API.getData('LOKASIPKL');
+            const deptLocs = (res.data || []).filter(l => l.Jurusan === user.jurusan);
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Pilih Tempat PKL</option>' + deptLocs.map(l => `<option value="${l.ID_PKL}">${l.NamaTempat}</option>`).join('');
+        }
+
+        async function loadGuruOptions(selectId) {
+            const res = await API.getData('DATAGURU');
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Pilih Guru Pembimbing</option>' + (res.data || []).map(g => `<option value="${g.ID_GURU}">${g.NamaGuru}</option>`).join('');
+        }
+
+        function openViewStudent(nis) {
+            const s = window.combinedStudentData.find(item => item.nis == nis);
+            if (!s) return;
+
+            const content = document.getElementById('viewStudentContent');
+            const sectionStyle = "margin-bottom: 2rem; background: rgba(59, 130, 246, 0.05); padding: 1.5rem; border-radius: 1rem; border: 1px solid rgba(59, 130, 246, 0.1);";
+            const headerStyle = "font-weight: 700; font-size: 1.1rem; color: var(--primary); margin-bottom: 1.25rem; border-bottom: 2px solid rgba(59, 130, 246, 0.2); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;";
+            const gridStyle = "display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; font-size: 0.95rem;";
+
+            content.innerHTML = `
+                <!-- Group 1: Data Siswa -->
+                <div style="${sectionStyle}">
+                    <div style="${headerStyle}"><i class="fas fa-id-card"></i> Data Identitas Siswa</div>
+                    <div style="${gridStyle}">
+                        <div><strong style="color:var(--text-muted)">NIS:</strong><br>${s.nis}</div>
+                        <div><strong style="color:var(--text-muted)">Nama Lengkap:</strong><br>${s.nama}</div>
+                        <div><strong style="color:var(--text-muted)">NIK:</strong><br>${s.NIK || '-'}</div>
+                        <div><strong style="color:var(--text-muted)">Jurusan:</strong><br>${s.jurusan}</div>
+                        <div><strong style="color:var(--text-muted)">Kelas:</strong><br>${s.kelas}</div>
+                        <div><strong style="color:var(--text-muted)">Tempat, Tgl Lahir:</strong><br>${s.TempatLahir || '-'}, ${formatDate(s.TanggalLahir)}</div>
+                        <div><strong style="color:var(--text-muted)">Gol. Darah:</strong><br>${s.GolDarah || '-'}</div>
+                        <div><strong style="color:var(--text-muted)">Kontak Siswa:</strong><br>${formatWhatsApp(s.KontakSiswa)}</div>
+                        <div><strong style="color:var(--text-muted)">Nama Orang Tua:</strong><br>${s.NamaOrangtua || '-'}</div>
+                        <div><strong style="color:var(--text-muted)">Kontak Orang Tua:</strong><br>${formatWhatsApp(s.KontakOrangtua)}</div>
+                    </div>
+                </div>
+
+                <!-- Group 2: Data Tempat PKL -->
+                <div style="${sectionStyle}">
+                    <div style="${headerStyle}"><i class="fas fa-building"></i> Penempatan PKL Saat Ini</div>
+                    <div style="${gridStyle}">
+                        <div style="grid-column: span 2;"><strong style="color:var(--text-muted)">Nama Tempat:</strong><br>${s.location ? s.location.NamaTempat : 'Belum Ditentukan'}</div>
+                        <div style="grid-column: span 2;"><strong style="color:var(--text-muted)">Alamat:</strong><br>${s.location ? s.location.Alamat : '-'}</div>
+                        <div><strong style="color:var(--text-muted)">Ketua Pimpinan:</strong><br>${s.location ? s.location.NamaPimpinan : '-'}</div>
+                        <div><strong style="color:var(--text-muted)">Mulai PKL:</strong><br>${formatDate(s.startDate)}</div>
+                        <div><strong style="color:var(--text-muted)">Selesai PKL:</strong><br>${formatDate(s.endDate)}</div>
+                    </div>
+
+                    ${s.pklHistory && s.pklHistory.length > 1 ? `
+                    <div style="margin-top: 1.5rem; border-top: 1px dashed rgba(59, 130, 246, 0.2); padding-top: 1rem;">
+                        <strong style="color:var(--primary); font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">Riwayat Penempatan:</strong>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+                            ${s.pklHistory.map((id, idx) => {
+                const loc = window.locationData ? window.locationData.find(l => l.ID_PKL == id) : null;
+                return `<div style="display: flex; gap: 0.5rem; align-items: baseline;">
+                                    <span style="color: var(--text-muted)">${idx + 1}.</span>
+                                    <span>${loc ? loc.NamaTempat : id} ${idx === s.pklHistory.length - 1 ? '<span class="badge badge-success" style="font-size: 0.65rem; padding: 0.1rem 0.4rem; background: var(--success); color: white; border-radius: 0.5rem;">Aktif</span>' : ''}</span>
+                                </div>`;
+            }).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <!-- Group 3: Data Pembimbing -->
+                <div style="${sectionStyle}">
+                    <div style="${headerStyle}"><i class="fas fa-user-tie"></i> Pembimbing & Mentor</div>
+                    <div style="${gridStyle}">
+                        <div><strong style="color:var(--text-muted)">Nama Mentor DUDI:</strong><br>${s.location ? s.location.NamaMentor : '-'}</div>
+                        <div><strong style="color:var(--text-muted)">Kontak Mentor:</strong><br>${formatWhatsApp(s.location ? s.location.KontakMentor : '-')}</div>
+                        <div><strong style="color:var(--text-muted)">Guru Pembimbing:</strong><br>${s.guru.name}</div>
+                        <div><strong style="color:var(--text-muted)">Kontak Guru:</strong><br>${formatWhatsApp(s.guru.contact)}</div>
+                    </div>
+                </div>
+            `;
+            toggleViewStudentModal(true);
+        }
+
+        function openEditStudent(nis) {
+            const s = window.combinedStudentData.find(item => item.nis == nis);
+            if (!s) return;
+            document.getElementById('studentModalTitle').textContent = 'Edit Data Siswa';
+            document.getElementById('stuOriginalId').value = s.nis;
+            document.getElementById('stuNis').value = s.nis;
+            document.getElementById('stuNama').value = s.nama;
+            document.getElementById('stuKelas').value = s.kelas;
+            toggleAddStudentModal(true);
+            setTimeout(() => {
+                document.getElementById('stuIdPkl').value = s.currentIdPkl || '';
+                document.getElementById('stuIdGuru').value = s.pkl ? s.pkl.ID_GURU : '';
+            }, 500);
+        }
+
+        document.getElementById('addStudentForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveStudent');
+            btn.disabled = true; btn.textContent = 'Menyimpan...';
+            const originalNis = document.getElementById('stuOriginalId').value;
+            const stuData = {
+                nis: document.getElementById('stuNis').value,
+                nama: document.getElementById('stuNama').value,
+                jurusan: user.jurusan,
+                kelas: document.getElementById('stuKelas').value
+            };
+            const pklData = {
+                nis: stuData.nis,
+                ID_PKL: document.getElementById('stuIdPkl').value,
+                ID_GURU: document.getElementById('stuIdGuru').value
+            };
+            try {
+                const res1 = await API.updateData('DATASISWA', originalNis, stuData);
+                const res2 = await API.updateData('DATAPKL', originalNis, pklData);
+                if (res1.status === 'success' && res2.status === 'success') { showToast('Berhasil diperbarui!'); toggleAddStudentModal(false); loadStudents(); }
+                else showToast('Gagal memperbarui data.', 'danger');
+            } catch (err) { alert('Kesalahan jaringan'); }
+            finally { btn.disabled = false; btn.textContent = 'Simpan Data'; }
+        };
+
+        // ==========================================
+        // APPLICATIONS, ATTENDANCE, REPORT TITLES
+        // ==========================================
+        async function loadApplications() {
+            const tbody = document.getElementById('applicationTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Memuat data...</td></tr>';
+            try {
+                const [resApp, resStudent, resLocation] = await Promise.all([
+                    API.getData('PENGAJUANPKL'), API.getData('DATASISWA'), API.getData('LOKASIPKL')
+                ]);
+                const deptApps = (resApp.data || []).filter(a => a.Jurusan === user.jurusan);
+                if (deptApps.length > 0) {
+                    window.allApplications = deptApps.map(app => {
+                        const nisList = app.NIS ? app.NIS.toString().split(',').map(n => n.trim()) : [];
+                        const names = nisList.map(nis => {
+                            const found = (resStudent.data || []).find(s => s.nis == nis);
+                            return found ? found.nama : nis;
+                        });
+
+                        const studentName = names.length > 0 ? names.join(', ') : (app.NamaSiswa || 'Tidak Ditemukan');
+                        const location = (resLocation.data || []).find(l => l.ID_PKL == app.ID_PKL);
+                        const primaryStudent = (resStudent.data || []).find(s => s.nis == nisList[0]);
+
+                        return {
+                            ...app,
+                            studentName: studentName,
+                            locationName: location ? location.NamaTempat : (app.NamaTempat || 'Tidak Ditemukan'),
+                            studentObj: primaryStudent,
+                            students: nisList.map(nis => (resStudent.data || []).find(s => s.nis == nis)).filter(s => s),
+                            locationObj: location
+                        };
+                    });
+                    renderApplications(window.allApplications);
+                } else tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Tidak ada pengajuan untuk jurusan Anda.</td></tr>';
+            } catch (err) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--danger); padding: 2rem;">Gagal memuat data.</td></tr>'; }
+        }
+
+        function renderApplications(data) {
+            const container = document.getElementById('applicationDataContainer');
+            const isMobile = window.innerWidth <= 768;
+            const sorted = [...data].sort((a, b) => new Date(b.TanggalAjuan || b.Tanggal) - new Date(a.TanggalAjuan || a.Tanggal));
+
+            if (isMobile) {
+                container.innerHTML = `<div class="card-grid">` + sorted.map(app => {
+                    let statusClass = 'badge-warning';
+                    if (app.Status === 'Disetujui') statusClass = 'badge-success';
+                    if (app.Status === 'Ditolak') statusClass = 'badge-danger';
+
+                    return `
+                    <div class="glass-card fade-in" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; border: 1px solid var(--glass-border);">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                <div class="logo-circle" style="width: 40px; height: 40px; background: rgba(var(--primary-rgb), 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-file-invoice" style="color: var(--primary); font-size: 1.1rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">${app.studentName}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${app.NIS} • ${app.Jurusan}</div>
+                                </div>
+                            </div>
+                            <span class="badge ${statusClass}">${app.Status || 'Pending'}</span>
+                        </div>
+
+                        <div style="display: grid; gap: 0.75rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="fas fa-building" style="width: 16px; color: var(--primary-light); font-size: 0.85rem;"></i>
+                                <div style="font-size: 0.85rem; color: var(--text-main);">${app.locationName}</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="fas fa-calendar" style="width: 16px; color: var(--accent); font-size: 0.85rem;"></i>
+                                <div style="font-size: 0.85rem; color: var(--text-main);">${app.TipeAjuan || 'PKL'} • ${formatDate(app.TanggalAjuan || app.Tanggal)}</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="fas fa-clock" style="width: 16px; color: var(--success); font-size: 0.85rem;"></i>
+                                <div style="font-size: 0.85rem; color: var(--text-main); font-weight: 600;">${app.StartDate ? formatDate(app.StartDate) : '-'} s/d ${app.EndDate ? formatDate(app.EndDate) : '-'}</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                            <button class="btn" style="flex: 1; padding: 0.6rem; background: rgba(var(--primary-rgb), 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.75rem;" onclick="openViewApplication('${app.ID_PENGAJUAN}')">
+                                <i class="fas fa-eye"></i> Detail
+                            </button>
+                            ${(app.Status === 'Pending' || !app.Status) ? `
+                                <button class="btn" style="flex: 2; padding: 0.6rem; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.75rem;" onclick="openApplicationAction('${app.ID_PENGAJUAN}')">
+                                    <i class="fas fa-check-circle"></i> Konfirmasi
+                                </button>
+                            ` : app.Status === 'Disetujui' ? `
+                                <button class="btn" style="flex: 1; padding: 0.6rem; background: rgba(239, 68, 68, 0.1); color: var(--danger); display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.75rem;" onclick="deleteApprovedApplication('${app.ID_PENGAJUAN}')">
+                                    <i class="fas fa-trash"></i> Batal
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>`;
+                }).join('') + `</div>`;
+            } else {
+                container.innerHTML = `
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    <th style="padding: 1rem;">Siswa & NIS</th>
+                                    <th style="padding: 1rem;">Tempat PKL</th>
+                                    <th style="padding: 1rem;">Tipe & Tanggal</th>
+                                    <th style="padding: 1rem;">Status</th>
+                                    <th style="padding: 1rem; text-align: right; padding-right: 1.5rem;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="applicationTableBody"></tbody>
+                        </table>
+                    </div>`;
+
+                const tbody = document.getElementById('applicationTableBody');
+                sorted.forEach(app => {
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid #f1f5f9';
+                    let statusClass = 'badge-warning';
+                    if (app.Status === 'Disetujui') statusClass = 'badge-success';
+                    if (app.Status === 'Ditolak') statusClass = 'badge-danger';
+                    tr.innerHTML = `
+                        <td style="padding: 1rem;">
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${app.studentName}</div>
+                            <div style="font-size: 0.75rem; color: var(--electric-blue); font-weight: 600;">NIS: ${app.NIS}</div>
+                        </td>
+                        <td style="padding: 1rem;">
+                            <div style="font-weight: 600; color: #fff;">${app.locationName}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">${app.Jurusan}</div>
+                        </td>
+                        <td style="padding: 1rem;">
+                            <div style="font-weight: 700; color: var(--accent); font-size: 0.8rem;">${app.TipeAjuan || 'PKL'}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(app.TanggalAjuan || app.Tanggal)}</div>
+                            <div style="font-size: 0.75rem; color: var(--primary); font-weight: 600; margin-top: 0.2rem;">${app.StartDate ? formatDate(app.StartDate) : '-'} s/d ${app.EndDate ? formatDate(app.EndDate) : '-'}</div>
+                        </td>
+                        <td style="padding: 1rem;"><span class="badge ${statusClass}">${app.Status || 'Pending'}</span></td>
+                        <td style="padding: 1rem; text-align: right; padding-right: 1.25rem;">
+                            <div class="table-actions" style="justify-content: flex-end;">
+                                <button class="action-btn view" onclick="openViewApplication('${app.ID_PENGAJUAN}')" title="Lihat"><i class="fas fa-eye"></i></button>
+                                ${(app.Status === 'Pending' || !app.Status) ? `
+                                    <button class="action-btn edit" onclick="openApplicationAction('${app.ID_PENGAJUAN}')" title="Konfirmasi">
+                                        <i class="fas fa-check-double"></i>
+                                    </button>
+                                ` : app.Status === 'Disetujui' ? `
+                                    <button class="action-btn delete" onclick="deleteApprovedApplication('${app.ID_PENGAJUAN}')" title="Batalkan/Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        function filterApplications(query) {
+            if (!window.allApplications) return;
+            const q = query.toLowerCase();
+            const filtered = window.allApplications.filter(a => a.NIS.toString().includes(q) || a.studentName.toLowerCase().includes(q) || a.locationName.toLowerCase().includes(q));
+            renderApplications(filtered);
+        }
+
+        function openApplicationAction(id) {
+            const app = window.allApplications.find(a => a.ID_PENGAJUAN == id);
+            if (!app) return;
+            document.getElementById('actionApplicationId').value = id;
+            document.getElementById('displayAppStudent').textContent = app.studentName;
+            document.getElementById('displayAppLocation').textContent = app.locationName;
+            document.getElementById('appActionStatus').value = 'Disetujui';
+            document.getElementById('appActionReason').value = '';
+            toggleApplicationActionModal(true);
+        }
+
+        function toggleApplicationActionModal(show) {
+            const modal = document.getElementById('actionApplicationModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        document.getElementById('actionApplicationForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('actionApplicationId').value;
+            const status = document.getElementById('appActionStatus').value;
+            const reason = document.getElementById('appActionReason').value;
+
+            if (status === 'Ditolak' && !reason) {
+                showToast('Alasan penolakan wajib diisi.', 'danger');
+                return;
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+            btn.disabled = true;
+
+            const app = window.allApplications.find(a => a.ID_PENGAJUAN == id);
+            try {
+                const res = await API.updateData('PENGAJUANPKL', id, {
+                    Status: status,
+                    Catatan: reason,
+                    DisetujuiOleh: user.nama,
+                    TanggalPersetujuan: new Date().toISOString()
+                });
+
+                if (res.status === 'success') {
+                    if (status === 'Disetujui') {
+                        // Sync to DATAPKL individually
+                        const resPKL = await API.getData('DATAPKL');
+                        const nisList = app.NIS ? app.NIS.toString().split(',').map(n => n.trim()) : [];
+                        const fullGroupedNis = app.NIS ? app.NIS.toString() : "";
+
+                        for (let i = 0; i < nisList.length; i++) {
+                            const nis = nisList[i];
+                            let existing = resPKL.data ? resPKL.data.find(d => d.nis == nis) : null;
+                            let targetNisForUpdate = nis;
+
+                            if (!existing && i === 0 && fullGroupedNis.includes(',')) {
+                                existing = resPKL.data ? resPKL.data.find(d => d.nis == fullGroupedNis) : null;
+                                if (existing) targetNisForUpdate = fullGroupedNis;
+                            }
+
+                            const pklData = {
+                                nis: nis,
+                                ID_Jurusan: app.Jurusan,
+                                StartDate: app.StartDate || '',
+                                EndDate: app.EndDate || ''
+                            };
+
+                            if (existing) {
+                                if (!existing.ID_PKL_2) {
+                                    pklData.ID_PKL_2 = app.ID_PKL;
+                                } else {
+                                    pklData.ID_PKL_3 = app.ID_PKL;
+                                }
+                                await API.updateData('DATAPKL', targetNisForUpdate, pklData);
+                            } else {
+                                pklData.ID_PKL = app.ID_PKL;
+                                await API.postData('DATAPKL', pklData);
+                            }
+                        }
+
+                        showToast('Pengajuan disetujui and data PKL diperbarui.');
+                    } else {
+                        showToast('Pengajuan ditolak.');
+                    }
+                    toggleApplicationActionModal(false);
+                    loadApplications();
+                    loadDashboardStats();
+                } else showToast('Gagal: ' + res.message, 'danger');
+            } catch (err) { showToast('Kesalahan jaringan', 'danger'); }
+            finally { btn.innerHTML = originalText; btn.disabled = false; }
+        };
+
+        function openViewApplication(id) {
+            const app = window.allApplications.find(a => a.ID_PENGAJUAN == id);
+            if (!app) return;
+            const s = app.studentObj || {};
+            const loc = app.locationObj || {};
+            const content = document.getElementById('viewApplicationContent');
+            const sectionStyle = "margin-bottom: 2rem; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--glass-border);";
+            const headerStyle = "font-size: 1.1rem; font-weight: 700; color: var(--primary-light); margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;";
+
+            const studentsToRender = app.students && app.students.length > 0 ? app.students : [s];
+            const itemStyle = "padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 0.25rem;";
+            const labelStyle = "font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;";
+            const valueStyle = "font-weight: 600; color: var(--text-main); font-size: 0.95rem;";
+
+            let studentHtml = '';
+            studentsToRender.forEach((std, index) => {
+                studentHtml += `
+                    <div style="${sectionStyle} ${index > 0 ? 'margin-top: 1rem;' : ''}">
+                        <div style="${headerStyle}"><i class="fas fa-user-graduate"></i> DATA SISWA ${studentsToRender.length > 1 ? (index + 1) : ''}</div>
+                        <div style="display: flex; flex-direction: column;">
+                            <div style="${itemStyle}"><span style="${labelStyle}">NIS</span><span style="${valueStyle}">${std.nis || '-'}</span></div>
+                            <div style="${itemStyle}"><span style="${labelStyle}">Nama Lengkap</span><span style="${valueStyle}">${std.nama || '-'}</span></div>
+                            <div style="${itemStyle}"><span style="${labelStyle}">Jurusan / Kelas</span><span style="${valueStyle}">${std.jurusan || app.Jurusan} / ${std.kelas || '-'}</span></div>
+                            <div style="${itemStyle}"><span style="${labelStyle}">Tempat, Tgl Lahir</span><span style="${valueStyle}">${std.TempatLahir || '-'}, ${formatDate(std.TanggalLahir)}</span></div>
+                            <div style="${itemStyle}"><span style="${labelStyle}">Kontak Siswa</span><span style="${valueStyle}">${std.KontakSiswa || '-'}</span></div>
+                            <div style="${itemStyle}; border-bottom: none;"><span style="${labelStyle}">Orang Tua (Nama / Kontak)</span><span style="${valueStyle}">${std.NamaOrangtua || '-'} (${std.KontakOrangtua || '-'})</span></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('viewApplicationModal').innerHTML = `
+                <div class="glass" style="width: 95%; max-width: 500px; padding: 2rem; border-radius: var(--radius); position: relative;">
+                    <button class="btn-close" onclick="toggleViewApplicationModal(false)"
+                        style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); z-index: 10;">&times;</button>
+                    <h3 style="margin-bottom: 2rem; font-family: 'Outfit', sans-serif; font-size: 1.5rem; color: var(--text-main);">Detail Pengajuan</h3>
+                    
+                    <div id="viewApplicationContent" style="max-height: 70vh; overflow-y: auto; padding-right: 0.5rem;">
+                        <!-- Group 1: Data Siswa -->
+                        ${studentHtml}
+
+                        <!-- Group 2: Data Tempat PKL -->
+                        <div style="${sectionStyle}">
+                            <div style="${headerStyle}"><i class="fas fa-building"></i> INFO TEMPAT PKL</div>
+                            <div style="display: flex; flex-direction: column;">
+                                <div style="${itemStyle}"><span style="${labelStyle}">Nama Instansi</span><span style="${valueStyle}">${loc.NamaTempat || app.locationName}</span></div>
+                                <div style="${itemStyle}"><span style="${labelStyle}">Alamat</span><span style="${valueStyle}">${loc.Alamat || '-'}</span></div>
+                                <div style="${itemStyle}"><span style="${labelStyle}">Pimpinan / Mentor</span><span style="${valueStyle}">${loc.NamaPimpinan || '-'} / ${loc.NamaMentor || '-'}</span></div>
+                                <div style="${itemStyle}; border-bottom: none;"><span style="${labelStyle}">Kontak Mentor</span><span style="${valueStyle}">${loc.KontakMentor || '-'}</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Group 3: Detail Pengajuan -->
+                        <div style="${sectionStyle}">
+                            <div style="${headerStyle}"><i class="fas fa-info-circle"></i> DETAIL PENGAJUAN</div>
+                            <div style="display: flex; flex-direction: column;">
+                                <div style="${itemStyle}"><span style="${labelStyle}">Tipe Ajuan</span><span style="${valueStyle}">${app.TipeAjuan}</span></div>
+                                <div style="${itemStyle}"><span style="${labelStyle}">Periode PKL</span><span style="${valueStyle}">${formatDate(app.StartDate)} s/d ${formatDate(app.EndDate)}</span></div>
+                                <div style="${itemStyle}"><span style="${labelStyle}">Status</span>
+                                    <div><span class="badge ${app.Status === 'Disetujui' ? 'badge-success' : (app.Status === 'Ditolak' ? 'badge-danger' : 'badge-warning')}" style="font-size: 0.7rem;">${app.Status || 'Pending'}</span></div>
+                                </div>
+                                <div style="${itemStyle}; border-bottom: none;">
+                                    <span style="${labelStyle}">Catatan / Feedback</span>
+                                    <div style="margin-top: 0.5rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 0.75rem; border: 1px solid var(--glass-border); font-size: 0.85rem; line-height: 1.5;">
+                                        ${app.Catatan || '<span style="color:var(--text-muted); font-style:italic;">Tidak ada catatan</span>'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            toggleViewApplicationModal(true);
+        }
+
+        function toggleViewApplicationModal(show) {
+            const modal = document.getElementById('viewApplicationModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        async function deleteApprovedApplication(id) {
+            if (!confirm('Apakah Anda yakin ingin membatalkan/menghapus pengajuan yang sudah disetujui ini? Hal ini juga akan menghapus data penempatan PKL siswa.')) return;
+            const app = window.allApplications.find(a => a.ID_PENGAJUAN == id);
+            if (!app) return;
+            try {
+                const res = await API.deleteData('PENGAJUANPKL', id);
+                if (res.status === 'success') {
+                    // Revert student status by deleting from DATAPKL individually
+                    const nisList = app.NIS ? app.NIS.toString().split(',').map(n => n.trim()) : [];
+                    for (const nis of nisList) {
+                        await API.deleteData('DATAPKL', nis);
+                    }
+                    showToast('Pengajuan berhasil dibatalkan dan dihapus.');
+                    loadApplications();
+                    loadDashboardStats();
+                } else showToast('Gagal: ' + res.message, 'danger');
+            } catch (err) { showToast('Kesalahan jaringan', 'danger'); }
+        }
+
+        async function loadAttendance() {
+            const tableBody = document.getElementById('attendanceTableBody');
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">Memuat data...</td></tr>';
+
+            try {
+                const [resAtt, resJurnal, resStudent] = await Promise.all([
+                    API.getData('KEHADIRAN'),
+                    API.getData('JURNAL'),
+                    API.getData('DATASISWA')
+                ]);
+
+                if (resAtt.status === 'success' && resAtt.data) {
+                    const deptStudents = (resStudent.data || []).filter(s => s.jurusan === user.jurusan);
+                    const nisList = deptStudents.map(s => s.nis.toString());
+
+                    window.allAttendance = resAtt.data.filter(a => nisList.includes(a.NIS.toString())).map(att => {
+                        const student = deptStudents.find(s => s.nis == att.NIS);
+                        const attDate = new Date(att.Tanggal).toDateString();
+                        const journal = resJurnal.data ? resJurnal.data.find(j =>
+                            j.NIS == att.NIS && new Date(j.Tanggal).toDateString() === attDate
+                        ) : null;
+
+                        return {
+                            ...att,
+                            studentName: student ? student.nama : 'Tidak Ditemukan',
+                            studentObj: student,
+                            journal: journal
+                        };
+                    });
+
+                    window.allAttendance.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+                    renderAttendance(window.allAttendance);
+                }
+            } catch (err) {
+                console.error(err);
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--danger);">Kesalahan jaringan.</td></tr>';
+            }
+        }
+
+        function renderAttendance(data) {
+            const container = document.getElementById('attendanceDataContainer');
+            const isMobile = window.innerWidth <= 768;
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 2rem;">Tidak ada data kehadiran.</div>';
+                return;
+            }
+
+            if (isMobile) {
+                container.innerHTML = `<div class="card-grid">` + data.map(att => `
+                    <div class="glass-card fade-in" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; border: 1px solid var(--glass-border);">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                <div class="logo-circle" style="width: 40px; height: 40px; background: rgba(var(--success-rgb), 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-calendar-check" style="color: var(--success); font-size: 1.1rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">${att.studentName}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${formatDate(att.Tanggal)}</div>
+                                </div>
+                            </div>
+                            <span class="badge ${att.StatusAbsen === 'Hadir' || att.Status === 'Hadir' ? 'badge-success' : 'badge-danger'}">${att.StatusAbsen || att.Status || 'Hadir'}</span>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 1rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Masuk</label>
+                                <div style="font-size: 0.9rem; color: var(--text-main); font-weight: 600;">${att.time_in || att.JamMasuk || '-'}</div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Pulang</label>
+                                <div style="font-size: 0.9rem; color: var(--text-main); font-weight: 600;">${att.time_out || att.JamPulang || '-'}</div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Jurnal</label>
+                                <div style="font-size: 0.9rem;">
+                                    ${att.journal ? '<span style="color: var(--success);"><i class="fas fa-check-circle"></i> Terisi</span>' : '<span style="color: var(--danger);"><i class="fas fa-times-circle"></i> Belum</span>'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn" style="width: 100%; padding: 0.6rem; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.75rem;" onclick="openViewAttendanceDetail('${att.ID_Absen || att.ID}')">
+                            <i class="fas fa-eye"></i> Lihat Detail
+                        </button>
+                    </div>
+                `).join('') + `</div>`;
+            } else {
+                container.innerHTML = `
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    <th style="padding: 1rem;">Siswa</th>
+                                    <th style="padding: 1rem;">Tanggal</th>
+                                    <th style="padding: 1rem;">Masuk</th>
+                                    <th style="padding: 1rem;">Pulang</th>
+                                    <th style="padding: 1rem;">Status</th>
+                                    <th style="padding: 1rem;">Jurnal</th>
+                                    <th style="padding: 1rem;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody"></tbody>
+                        </table>
+                    </div>`;
+
+                const tableBody = document.getElementById('attendanceTableBody');
+                tableBody.innerHTML = data.map(att => `
+                    <tr style="border-bottom: 1px solid var(--glass-border);">
+                        <td style="padding: 1rem;">
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${att.studentName}</div>
+                            <div style="font-size: 0.75rem; color: var(--electric-blue); font-weight: 600;">NIS: ${att.NIS}</div>
+                        </td>
+                        <td style="padding: 1rem; font-weight: 600;">${formatDate(att.Tanggal)}</td>
+                        <td style="padding: 1rem; color: var(--success); font-weight: 700;">${att.time_in || att.JamMasuk || '-'}</td>
+                        <td style="padding: 1rem; color: var(--warning); font-weight: 700;">${att.time_out || att.JamPulang || '-'}</td>
+                        <td style="padding: 1rem;">
+                            <span class="badge ${att.StatusAbsen === 'Hadir' || att.Status === 'Hadir' ? 'badge-success' : 'badge-danger'}">${att.StatusAbsen || att.Status || 'Hadir'}</span>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            ${att.journal ?
+                        '<span style="color: var(--success); font-size: 1.2rem;" title="Terisi"><i class="fas fa-check-circle"></i></span>' :
+                        '<span style="color: var(--danger); font-size: 1.2rem;" title="Belum"><i class="fas fa-times-circle"></i></span>'}
+                        </td>
+                        <td style="padding: 1rem; text-align: right; padding-right: 1.25rem;">
+                            <div class="table-actions" style="justify-content: flex-end;">
+                                <button class="action-btn view" onclick="openViewAttendanceDetail('${att.ID_Absen || att.ID}')" title="Lihat Detail"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function openViewAttendanceDetail(id) {
+            const att = window.allAttendance.find(a => (a.ID_Absen == id || a.ID == id));
+            if (!att) return;
+
+            const content = document.getElementById('viewAttendanceContent');
+            const sectionStyle = "margin-bottom: 1.5rem; background: rgba(255,255,255,0.05); padding: 1.25rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1);";
+            const headerStyle = "font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid rgba(59, 130, 246, 0.2); padding-bottom: 0.5rem;";
+
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <!-- Photo Column -->
+                    <div>
+                        <div style="${headerStyle}"><i class="fas fa-camera"></i> Foto Bukti</div>
+                        <div style="width: 100%; border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000;">
+                            ${(att.photo || att.Photo) ? `<img src="${att.photo || att.Photo}" style="width: 100%; height: auto; display: block;" onerror="this.src='https://placehold.co/400x300?text=Foto+Tidak+Ditemukan'">` : `<div style="padding: 3rem; text-align: center; color: var(--text-muted);"><i class="fas fa-image" style="font-size: 3rem; display: block; margin-bottom: 1rem;"></i>Tidak ada foto</div>`}
+                        </div>
+                    </div>
+
+                    <!-- Details Column -->
+                    <div>
+                        <div style="${sectionStyle}">
+                            <div style="${headerStyle}"><i class="fas fa-info-circle"></i> Informasi Absen</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+                                <div><strong style="color:var(--text-muted)">Waktu Masuk:</strong><br>${att.time_in || att.JamMasuk || '-'}</div>
+                                <div><strong style="color:var(--text-muted)">Waktu Pulang:</strong><br>${att.time_out || att.JamPulang || '-'}</div>
+                                <div><strong style="color:var(--text-muted)">Status:</strong><br><span class="badge ${att.StatusAbsen === 'Hadir' || att.Status === 'Hadir' ? 'badge-success' : 'badge-danger'}">${att.StatusAbsen || att.Status || 'Hadir'}</span></div>
+                                <div><strong style="color:var(--text-muted)">Jarak:</strong><br>${att.JarakAbsen || '0'} m</div>
+                            </div>
+                        </div>
+
+                        <div style="${sectionStyle}">
+                            <div style="${headerStyle}"><i class="fas fa-map-marker-alt"></i> Lokasi Absen</div>
+                            <div style="font-size: 0.9rem; margin-bottom: 1rem;">
+                                <strong style="color:var(--text-muted)">Koordinat:</strong><br>
+                                ${att.lat || att.LAT || '0'}, ${att.lng || att.LNG || '0'}
+                            </div>
+                            <a href="https://www.google.com/maps?q=${att.lat || att.LAT},${att.lng || att.LNG}" target="_blank" class="btn btn-sm" style="background: #ea4335; color: #fff; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                <i class="fas fa-external-link-alt"></i> Buka di Google Maps
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Journal Section (Full Width Bottom) -->
+                <div style="margin-top: 1.5rem; ${sectionStyle}">
+                    <div style="${headerStyle}"><i class="fas fa-book"></i> Jurnal Harian</div>
+                    ${att.journal ? `
+                        <div style="display: grid; gap: 1rem;">
+                            <div>
+                                <strong style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">Aktivitas/Kegiatan:</strong>
+                                <div style="background: rgba(0,0,0,0.1); padding: 1rem; border-radius: 0.5rem; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; border: 1px solid rgba(255,255,255,0.05);">
+                                    ${att.journal.Aktifitas || att.journal.JournalContent || '-'}
+                                </div>
+                            </div>
+                            <div>
+                                <strong style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">Feedback Pembimbing:</strong>
+                                <div style="background: rgba(59, 130, 246, 0.05); padding: 1rem; border-radius: 0.5rem; font-size: 0.95rem; line-height: 1.5; border: 1px solid rgba(59, 130, 246, 0.1);">
+                                    ${att.journal.feedback || '<span style="color: var(--text-muted); font-style: italic;">Belum ada feedback</span>'}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 1rem; font-size: 0.85rem; margin-top: 0.5rem;">
+                                <div><strong style="color: var(--text-muted);">Status Jurnal:</strong> <span class="badge ${att.journal.status === 'Disetujui' ? 'badge-success' : (att.journal.status === 'Revisi' ? 'badge-warning' : 'badge-primary')}">${att.journal.status || 'Pending'}</span></div>
+                            </div>
+                        </div>
+                    ` : `
+                        <div style="text-align: center; padding: 2rem; color: var(--danger); background: rgba(239, 68, 68, 0.05); border-radius: 0.5rem; border: 1px dashed rgba(239, 68, 68, 0.3);">
+                            <i class="fas fa-times-circle" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                            Siswa belum mengisi jurnal harian untuk tanggal ini.
+                        </div>
+                    `}
+                </div>
+            `;
+            toggleAttendanceModal(true);
+        }
+
+        function toggleAttendanceModal(show) {
+            const modal = document.getElementById('viewAttendanceModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        function toggleViewStudentModal(show) {
+            const modal = document.getElementById('viewStudentModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        function toggleViewLocationModal(show) {
+            const modal = document.getElementById('viewLocationModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        async function loadReportTitles() {
+            const tbody = document.getElementById('reportTitleTableBody');
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem;">Memuat data...</td></tr>';
+            try {
+                const [titleRes, stuRes] = await Promise.all([API.getData('JUDULLAPORAN'), API.getData('DATASISWA')]);
+                const deptStudents = (stuRes.data || []).filter(s => s.jurusan === user.jurusan);
+                const nisList = deptStudents.map(s => s.nis.toString());
+                window.allReportTitles = (titleRes.data || []).filter(t => nisList.includes(t.NIS.toString())).map(t => {
+                    const s = deptStudents.find(st => st.nis == t.NIS);
+                    return { ...t, studentName: s ? s.nama : (t.NamaSiswa || t.NIS) };
+                });
+                renderReportTitles(window.allReportTitles);
+            } catch (err) { }
+        }
+
+        function renderReportTitles(data) {
+            const container = document.getElementById('reportTitleDataContainer');
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                container.innerHTML = `<div class="card-grid">` + data.map(t => {
+                    const statusIcon = t.status === 'Disetujui' ? '<i class="fas fa-check-circle" style="color: var(--success); margin-right: 0.5rem;"></i>' :
+                        t.status === 'Revisi' ? '<i class="fas fa-exclamation-triangle" style="color: var(--warning); margin-right: 0.5rem;"></i>' :
+                            t.status === 'Ditolak' ? '<i class="fas fa-times-circle" style="color: var(--danger); margin-right: 0.5rem;"></i>' : '';
+
+                    let statusLabel = t.status || 'Pending';
+                    const badgeClass = t.status === 'Disetujui' ? 'badge-success' : (t.status === 'Revisi' ? 'badge-warning' : (t.status === 'Ditolak' ? 'badge-danger' : 'badge-primary'));
+
+                    return `
+                    <div class="glass-card fade-in" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; border: 1px solid var(--glass-border);">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                <div class="logo-circle" style="width: 40px; height: 40px; background: rgba(var(--accent-rgb), 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-book" style="color: var(--accent); font-size: 1.1rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">${t.studentName}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">NIS: ${t.NIS}</div>
+                                </div>
+                            </div>
+                            <span class="badge ${badgeClass}">${statusLabel}</span>
+                        </div>
+
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 1rem;">
+                            <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">Judul Laporan</label>
+                            <div style="font-size: 0.9rem; color: var(--text-main); font-weight: 600; line-height: 1.4;">${t.JudulAjuan}</div>
+                        </div>
+
+                        <button class="btn" style="width: 100%; padding: 0.6rem; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.75rem;" onclick="openReportTitleAction('${t.ID_Judul}')">
+                            <i class="fas fa-edit"></i> ${t.status && t.status !== 'Pending' ? 'Edit Respon' : 'Konfirmasi Judul'}
+                        </button>
+                    </div>`;
+                }).join('') + `</div>`;
+            } else {
+                container.innerHTML = `
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    <th style="padding: 1rem;">Siswa</th>
+                                    <th style="padding: 1rem;">Judul Laporan</th>
+                                    <th style="padding: 1rem;">Status</th>
+                                    <th style="padding: 1rem; text-align: right; padding-right: 1.5rem;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTitleTableBody"></tbody>
+                        </table>
+                    </div>`;
+
+                const tbody = document.getElementById('reportTitleTableBody');
+                data.forEach(t => {
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid #f1f5f9';
+
+                    const statusIcon = t.status === 'Disetujui' ? '<i class="fas fa-check-circle" style="color: var(--success); margin-right: 0.5rem;"></i>' :
+                        t.status === 'Revisi' ? '<i class="fas fa-exclamation-triangle" style="color: var(--warning); margin-right: 0.5rem;"></i>' :
+                            t.status === 'Ditolak' ? '<i class="fas fa-times-circle" style="color: var(--danger); margin-right: 0.5rem;"></i>' : '';
+
+                    let statusLabel = t.status || 'Pending';
+                    if (t.status && t.status !== 'Pending' && t.DiprosesOleh) {
+                        statusLabel = `${t.status === 'Revisi' ? 'Diminta Revisi' : t.status} oleh ${t.DiprosesOleh}`;
+                    }
+
+                    tr.innerHTML = `
+                        <td style="padding: 1rem;">
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${t.studentName}</div>
+                            <div style="font-size: 0.75rem; color: var(--electric-blue); font-weight: 600;">NIS: ${t.NIS}</div>
+                        </td>
+                        <td style="padding: 1rem; font-weight: 600; color: var(--text-main); line-height: 1.4;">${t.JudulAjuan}</td>
+                        <td style="padding: 1rem;">
+                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem;">
+                                ${statusIcon}
+                                <span class="badge ${t.status === 'Disetujui' ? 'badge-success' : (t.status === 'Revisi' ? 'badge-warning' : (t.status === 'Ditolak' ? 'badge-danger' : 'badge-primary'))}" style="white-space: normal; line-height: 1.4; text-align: left;">
+                                    ${statusLabel}
+                                </span>
+                            </div>
+                        </td>
+                        <td style="padding: 1rem; text-align: right; padding-right: 1.25rem;">
+                            <div class="table-actions" style="justify-content: flex-end;">
+                                <button class="action-btn edit" onclick="openReportTitleAction('${t.ID_Judul}')" title="${t.status && t.status !== 'Pending' ? 'Edit' : 'Konfirmasi'}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        function filterReportTitles(q) {
+            if (!window.allReportTitles) return;
+            const query = q.toLowerCase();
+            const filtered = window.allReportTitles.filter(t => t.NIS.toString().includes(query) || t.studentName.toLowerCase().includes(query) || t.JudulAjuan.toLowerCase().includes(query));
+            renderReportTitles(filtered);
+        }
+
+        function openReportTitleAction(id) {
+            const t = window.allReportTitles.find(item => item.ID_Judul == id);
+            if (!t) return;
+            document.getElementById('actionReportTitleId').value = t.ID_Judul;
+            document.getElementById('displayReportTitle').textContent = t.JudulAjuan;
+            document.getElementById('reportTitleStatus').value = t.status || 'Disetujui';
+            document.getElementById('reportTitleFeedback').value = t.feedback || '';
+            toggleReportTitleModal(true);
+        }
+
+        function toggleReportTitleModal(show) {
+            const modal = document.getElementById('actionReportTitleModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        document.getElementById('actionReportTitleForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('actionReportTitleId').value;
+            const status = document.getElementById('reportTitleStatus').value;
+            const feedback = document.getElementById('reportTitleFeedback').value;
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+            btn.disabled = true;
+            try {
+                const res = await API.updateData('JUDULLAPORAN', id, { status, feedback, DiprosesOleh: user.nama });
+                if (res.status === 'success') {
+                    showToast('Status judul laporan berhasil diperbarui!');
+                    toggleReportTitleModal(false);
+                    loadReportTitles();
+                } else showToast('Gagal memperbarui status', 'danger');
+            } catch (err) { alert('Kesalahan jaringan'); }
+            finally { btn.innerHTML = originalText; btn.disabled = false; }
+        };
+
+        // ==========================================
+        // PROFILE & UI UTILS
+        // ==========================================
+        function toggleProfileDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('profileDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        function closeProfileDropdown() {
+            const dropdown = document.getElementById('profileDropdown');
+            if (dropdown && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            }
+        }
+
+        window.onclick = function (event) {
+            if (!event.target.closest('.profile-dropdown-container')) {
+                closeProfileDropdown();
+            }
+        };
+
+        function openProfileModal() {
+            closeProfileDropdown();
+            showSection('profile');
+        }
+
+        async function openProfileDetails() {
+            const currentUser = AUTH.getUser();
+            document.getElementById('pViewNama').textContent = currentUser.nama;
+            document.getElementById('pViewUser').textContent = currentUser.username;
+            document.getElementById('pViewJurusan').textContent = currentUser.jurusan || '-';
+            try {
+                const res = await API.getData('LOGINKAKOMLI');
+                const dbUser = res.data.find(u => u.username === currentUser.username);
+                if (dbUser) {
+                    document.getElementById('pViewNip').textContent = dbUser.nip || '-';
+                    document.getElementById('pViewKontak').textContent = dbUser.kontak || '-';
+                    document.getElementById('profUsername').value = dbUser.username;
+                    document.getElementById('profEditKontak').value = dbUser.kontak || '';
+                }
+            } catch (e) { }
+            updateUserUI(); // Sync images
+        }
+
+        function switchProfileState(state) {
+            document.getElementById('profViewContent').classList.toggle('hidden', state !== 'view');
+            document.getElementById('profEditContent').classList.toggle('hidden', state !== 'edit');
+            document.getElementById('profPassContent').classList.toggle('hidden', state !== 'password');
+            const title = document.getElementById('profModalTitle');
+            if (state === 'view') title.textContent = 'Profil Saya';
+            else if (state === 'edit') title.textContent = 'Edit Profil';
+            else if (state === 'password') title.textContent = 'Ganti Password';
+        }
+
+        function handleAvatarPreview(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('profModalAvatar').src = e.target.result;
+                    document.getElementById('headerAvatar').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function saveProfile(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveProfile');
+            btn.disabled = true; btn.textContent = 'Menyimpan...';
+            const photoFile = document.getElementById('profilePhotoInput').files[0];
+            const updateData = { username: document.getElementById('profUsername').value, kontak: document.getElementById('profEditKontak').value };
+            try {
+                if (photoFile) {
+                    const compressed = await API.compressImage(photoFile);
+                    const upload = await API.uploadFile(compressed);
+                    if (upload.status === 'success') updateData.photo = upload.url;
+                }
+                const res = await API.updateProfile('kakomli', user.username, updateData);
+                if (res.status === 'success') {
+                    showToast('Profil diperbarui!');
+                    const session = JSON.parse(localStorage.getItem('pkl_session'));
+                    Object.assign(session, updateData); if (updateData.photo) session.photo = updateData.photo;
+                    localStorage.setItem('pkl_session', JSON.stringify(session));
+                    updateUserUI(); openProfileDetails(); switchProfileState('view');
+                } else showToast('Gagal: ' + res.message, 'danger');
+            } catch (err) { alert('Kesalahan'); }
+            finally { btn.disabled = false; btn.textContent = 'Simpan'; }
+        }
+
+        async function savePassword(e) {
+            e.preventDefault();
+            const oldPass = document.getElementById('profOldPass').value;
+            const newPass = document.getElementById('profNewPass').value;
+            if (oldPass !== user.password) { showToast('Password lama salah!', 'danger'); return; }
+            const btn = document.getElementById('btnSavePassword');
+            btn.disabled = true; btn.textContent = 'Memproses...';
+            try {
+                const res = await API.updateProfile('kakomli', user.username, { password: newPass });
+                if (res.status === 'success') {
+                    showToast('Password berhasil diganti!');
+                    const session = JSON.parse(localStorage.getItem('pkl_session'));
+                    session.password = newPass;
+                    localStorage.setItem('pkl_session', JSON.stringify(session));
+                    switchProfileState('view');
+                } else alert('Gagal');
+            } catch (err) { alert('Kesalahan'); }
+            finally { btn.disabled = false; btn.textContent = 'Update Password'; }
+        }
+
+        // Init
+        showSection('dashboard');
+    </script>
+</body>
+
+</html>

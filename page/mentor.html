@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Dashboard Pembimbing Industri - SIMAK NESBU</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @media print {
+
+            .sidebar,
+            .mobile-header,
+            .no-print,
+            header,
+            .btn-close,
+            .toast-container,
+            .section {
+                display: none !important;
+            }
+
+            @page {
+                margin-top: 0;
+            }
+
+            .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+    <script>
+        /* Mobile Helper functions */
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('active');
+                document.body.classList.toggle('sidebar-open', sidebar.classList.contains('active'));
+            }
+        }
+
+        /* Override showSection for Animations */
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll('.section');
+            const navLinks = document.querySelectorAll('.sidebar-menu a');
+            const bottomLinks = document.querySelectorAll('.bottom-nav-link');
+
+            sections.forEach(s => {
+                s.classList.add('hidden');
+                s.classList.remove('fade-in');
+            });
+
+            navLinks.forEach(l => l.classList.remove('active'));
+            bottomLinks.forEach(l => l.classList.remove('active'));
+
+            const target = document.getElementById('section-' + sectionId);
+            if (target) {
+                target.classList.remove('hidden');
+                target.classList.add('fade-in');
+
+                // Update Sidebar
+                const activeNav = document.getElementById('nav-' + sectionId);
+                if (activeNav) activeNav.classList.add('active');
+
+                // Update Bottom Nav
+                const bnavId = sectionId === 'home' ? 'mobile-nav-home' :
+                    sectionId === 'journals' ? 'mobile-nav-journals' :
+                        sectionId === 'attendance' ? 'mobile-nav-attendance' : '';
+
+                if (bnavId) {
+                    const activeBnav = document.getElementById(bnavId);
+                    if (activeBnav) activeBnav.classList.add('active');
+                }
+
+                const titles = {
+                    'home': 'Beranda',
+                    'journals': 'Validasi Jurnal Siswa',
+                    'attendance': 'Validasi Absensi Siswa',
+                    'evaluation': 'Penilaian PKL Siswa',
+                    'students': 'Data Siswa Bimbingan',
+                    'industry': 'Data Tempat PKL',
+                    'profile': 'Profil Mentor'
+                };
+                document.getElementById('sectionTitle').textContent = titles[sectionId] || sectionId;
+            }
+
+            // Close sidebar on mobile
+            const sidebar = document.getElementById('sidebar');
+            if (window.innerWidth <= 1024 && sidebar) {
+                sidebar.classList.remove('active');
+                document.body.classList.remove('sidebar-open');
+            }
+
+            if (sectionId === 'journals') loadJournals();
+            if (sectionId === 'attendance') loadAttendance();
+            if (sectionId === 'evaluation') loadEvaluations();
+            if (sectionId === 'students') loadStudentList();
+            if (sectionId === 'industry') loadIndustryDataMode();
+        }
+
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById('toggleIcon-' + inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                if (icon) icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            const timeStr = now.toLocaleDateString('id-ID', options).replace('pukul', '|');
+            const el = document.getElementById('currentTime');
+            if (el) el.textContent = timeStr;
+        }
+        setInterval(updateTime, 1000);
+    </script>
+</head>
+
+<body class="dashboard">
+    <header class="mobile-header">
+        <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <div class="logo-circle">
+                <img src="https://blogger.googleusercontent.com/img/a/AVvXsEj0gidDMAxs79SkpgBW6-nRy7SLq7ytNTzeXSLp8-sX5SKhlCY7JHDHr7BNvJ9nTF8YgHbB_kubuvfYzX4t4ONGFDfoL2-AMa8mgK29o6XGebiHkSMgiO2BoXpv0fATKQ9XMf-RPWGbqrr_KQ1iVX3JeWYh9JGXR43QSWxyIa2o-qeJR9S0_8dxANpck08"
+                    alt="Logo"
+                    style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 5px rgba(var(--primary-rgb), 0.3));">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <span class="text-gradient"
+                    style="font-weight: 800; font-size: 1.1rem; line-height: 1; font-family: 'Outfit', sans-serif;">SIMAK</span>
+                <span
+                    style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; letter-spacing: 0.1em; opacity: 0.8;">NESBU</span>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="profile-dropdown-container">
+                <div class="header-profile" onclick="toggleProfileDropdown(event)"
+                    style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <img src="" alt="" id="headerAvatar"
+                        style="width: 36px; height: 36px; border-radius: 12px; border: 1.5px solid var(--glass-border); object-fit: cover;">
+                </div>
+                <div id="profileDropdown" class="profile-dropdown">
+                    <div class="dropdown-item" onclick="openProfileModal(); toggleProfileDropdown()">
+                        <i class="fas fa-user-circle"></i> Profil Saya
+                    </div>
+                    <div class="dropdown-item"
+                        onclick="switchProfileState('password'); openProfileModal(); toggleProfileDropdown()">
+                        <i class="fas fa-key"></i> Ganti Password
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger" onclick="AUTH.logout()">
+                        <i class="fas fa-sign-out-alt"></i> Keluar
+                    </div>
+                </div>
+            </div>
+            <button class="menu-toggle" onclick="toggleMobileSidebar()"
+                style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--text-main);">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <aside class="sidebar glass" id="sidebar">
+        <div class="user-profile" onclick="openProfileModal()">
+            <img src="" alt="Avatar" class="avatar" id="userAvatar" referrerpolicy="no-referrer">
+            <div>
+                <h4 id="userName">Mentor Name</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">Pembimbing Industri</p>
+            </div>
+        </div>
+        <div class="sidebar-content">
+            <ul class="sidebar-menu">
+                <li><a href="#" id="nav-home" onclick="showSection('home')"><i class="fas fa-home"></i> Beranda</a></li>
+                <li><a href="#" id="nav-journals" class="active" onclick="showSection('journals')"><i
+                            class="fas fa-check-circle"></i> Validasi Jurnal</a></li>
+                <li><a href="#" id="nav-attendance" onclick="showSection('attendance')"><i
+                            class="fas fa-user-check"></i>
+                        Absensi Siswa</a></li>
+                <li><a href="#" id="nav-evaluation" onclick="showSection('evaluation')"><i class="fas fa-star"></i>
+                        Penilaian Siswa</a></li>
+                <li><a href="#" id="nav-students" onclick="showSection('students')"><i class="fas fa-users"></i> Data
+                        Siswa</a></li>
+                <li><a href="#" id="nav-industry" onclick="showSection('industry')"><i class="fas fa-building"></i> Data
+                        DU/DI</a></li>
+                <li><a href="#" onclick="AUTH.logout()" style="color: var(--danger);"><i
+                            class="fas fa-sign-out-alt"></i>
+                        Keluar</a></li>
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <div style="display: flex; align-items: center; gap: 0.5rem; opacity: 0.6;">
+                <i class="fas fa-shield-virus"></i>
+                <span>Malware Developed</span>
+            </div>
+            <div style="font-size: 0.65rem; margin-top: 0.25rem;">&copy; 2026 SIMAK NESBU</div>
+        </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()" aria-hidden="true"></div>
+    <main class="main-content">
+        <header
+            style="margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2 id="sectionTitle" class="text-gradient"
+                    style="font-family: 'Outfit', sans-serif; font-size: 2.25rem; font-weight: 800; line-height: 1.1;">
+                    Validasi Jurnal</h2>
+                <div id="currentTime"
+                    style="font-weight: 600; color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;"></div>
+            </div>
+            <div id="industryNameHeader"
+                style="font-weight: 700; color: var(--primary); background: rgba(var(--primary-rgb), 0.05); padding: 0.6rem 1.25rem; border-radius: 1rem; border: 1px solid var(--glass-border); font-size: 0.9rem; font-family: 'Outfit', sans-serif;">
+                <i class="fas fa-industry" style="margin-right: 0.5rem; opacity: 0.8;"></i> <span
+                    id="headerIndustryName">-</span>
+            </div>
+        </header>
+
+        <!-- Section: Home / Dashboard -->
+        <div id="section-home" class="section">
+            <div class="glass" style="padding: 2rem; border-radius: var(--radius);">
+                <h3 style="margin-bottom: 2rem; color: var(--primary);">Selamat Datang, <span
+                        id="welcomeName">Mentor</span></h3>
+
+                <!-- Mobile Launcher Grid -->
+                <div class="launcher-grid" style="margin-bottom: 2rem;">
+                    <div class="launcher-item" onclick="showSection('journals')">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Jurnal</span>
+                    </div>
+                    <div class="launcher-item" onclick="showSection('attendance')">
+                        <i class="fas fa-user-check"></i>
+                        <span>Absensi</span>
+                    </div>
+                    <div class="launcher-item" onclick="showSection('students')">
+                        <i class="fas fa-users"></i>
+                        <span>Peserta</span>
+                    </div>
+                    <div class="launcher-item" onclick="showSection('evaluation')">
+                        <i class="fas fa-star"></i>
+                        <span>Penilaian</span>
+                    </div>
+                    <div class="launcher-item" onclick="showSection('industry')">
+                        <i class="fas fa-building"></i>
+                        <span>DU/DI</span>
+                    </div>
+                    <div class="launcher-item" onclick="openProfileModal()">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Profil</span>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="glass stat-card">
+                        <i class="fas fa-industry" style="color: var(--primary);"></i>
+                        <div class="stat-value" id="dashIndustryName" style="font-size: 1.25rem;">-</div>
+                        <div class="stat-label">Tempat PKL</div>
+                    </div>
+                    <div class="glass stat-card">
+                        <i class="fas fa-users" style="color: var(--secondary);"></i>
+                        <div class="stat-value" id="dashStudentCount">0</div>
+                        <div class="stat-label">Siswa Bimbingan</div>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top: 2rem; padding: 1.5rem; background: rgba(var(--primary-rgb), 0.05); border-radius: 1rem; border: 1px dashed var(--primary);">
+                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+                        Gunakan menu navigasi di samping untuk melakukan validasi jurnal harian siswa, memonitor
+                        absensi, serta memberikan penilaian akhir prakerin.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Jurnal -->
+        <div id="section-journals" class="section">
+            <div class="glass" style="padding: 1.5rem; border-radius: var(--radius);">
+                <div class="table-container">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid #f1f5f9;">
+                                <th style="padding: 1rem;">Siswa</th>
+                                <th style="padding: 1rem;">Tanggal</th>
+                                <th style="padding: 1rem;">Aktifitas</th>
+                                <th style="padding: 1rem;">Status</th>
+                                <th style="padding: 1rem;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journalTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i
+                                        class="fas fa-spinner fa-spin"></i> Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Absensi -->
+        <div id="section-attendance" class="section hidden">
+            <div class="glass" style="padding: 1.5rem; border-radius: var(--radius);">
+                <!-- Bulk Actions Bar -->
+                <div id="attendanceBulkActions" class="hidden"
+                    style="margin-bottom: 1.5rem; padding: 1rem; background: #f0f9ff; border-radius: 0.75rem; border: 1px solid #bae6fd; display: flex; align-items: center; justify-content: space-between;">
+                    <span id="attendanceSelectedCount" style="font-weight: 600; color: var(--primary);">0
+                        terpilih</span>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn"
+                            style="width: auto; padding: 0.5rem 1rem; background: var(--success); color: white;"
+                            onclick="bulkValidateAttendance('Disetujui')">
+                            <i class="fas fa-check"></i> Setujui Masal
+                        </button>
+                        <button class="btn"
+                            style="width: auto; padding: 0.5rem 1rem; background: var(--danger); color: white;"
+                            onclick="bulkValidateAttendance('Ditolak')">
+                            <i class="fas fa-times"></i> Tolak Masal
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid #f1f5f9;">
+                                <th style="padding: 1rem; width: 40px;">
+                                    <input type="checkbox" id="selectAllAttendance"
+                                        onclick="toggleAttendanceSelectAll(this.checked)">
+                                </th>
+                                <th style="padding: 1rem;">Siswa</th>
+                                <th style="padding: 1rem;">Tanggal</th>
+                                <th style="padding: 1rem;">Masuk/Pulang</th>
+                                <th style="padding: 1rem;">Status</th>
+                                <th style="padding: 1rem; width: 220px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i
+                                        class="fas fa-spinner fa-spin"></i> Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Evaluasi -->
+        <div id="section-evaluation" class="section hidden">
+            <div class="glass" style="padding: 1.5rem; border-radius: var(--radius);">
+                <div class="table-container">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid #f1f5f9;">
+                                <th style="padding: 1rem;">Siswa</th>
+                                <th style="padding: 1rem;">Jurusan/Kelas</th>
+                                <th style="padding: 1rem;">Status Nilai</th>
+                                <th style="padding: 1rem;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evaluationTableBody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i
+                                        class="fas fa-spinner fa-spin"></i> Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Data Siswa (Matching Admin Style) -->
+        <div id="section-students" class="section hidden">
+            <div class="glass" style="padding: 1.5rem; border-radius: var(--radius);">
+                <div class="table-container">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid #f1f5f9;">
+                                <th style="padding: 1rem;">Siswa (Nama & NIS)</th>
+                                <th style="padding: 1rem;">Kelas</th>
+                                <th style="padding: 1rem; text-align: right;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentListTableBody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i
+                                        class="fas fa-spinner fa-spin"></i> Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Industry Data -->
+        <div id="section-industry" class="section hidden">
+            <div class="glass" style="padding: 2rem; border-radius: var(--radius); max-width: 800px; margin: 0 auto;">
+
+                <!-- View Mode Container -->
+                <div id="industryViewMode">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h3 id="vIndNamaHeader" style="color: var(--primary); margin-bottom: 0.5rem;">Nama Industri
+                            </h3>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <p id="vIndBidangHeader" style="color: var(--text-muted); font-size: 0.9rem;">Bidang
+                                    Usaha</p>
+                                <span style="color: #cbd5e1;">|</span>
+                                <p id="vIndJurusanHeader"
+                                    style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600;">Jurusan</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="toggleIndustryEdit(true)"
+                            style="width: auto; padding: 0.5rem 1.5rem;">
+                            <i class="fas fa-edit"></i> Edit Data
+                        </button>
+                    </div>
+
+                    <div id="vIndMap" class="map-container" style="margin-bottom: 2rem;"></div>
+
+                    <div style="display: grid; gap: 1rem;">
+                        <div
+                            style="background: #f8fafc; padding: 1.25rem; border-radius: 0.75rem; border: 1px solid #e2e8f0;">
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                                <div>
+                                    <label
+                                        style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Jurusan
+                                        Terkait</label>
+                                    <div id="vIndJurusan" style="font-weight: 600; color: var(--primary);">-</div>
+                                </div>
+                                <div>
+                                    <label
+                                        style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Bidang
+                                        Usaha</label>
+                                    <div id="vIndBidang" style="font-weight: 500;">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                                <label
+                                    style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Nama
+                                    Industri</label>
+                                <div id="vIndNama" style="font-weight: 500;">-</div>
+                            </div>
+                            <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                                <label
+                                    style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Pimpinan</label>
+                                <div id="vIndPimpinan" style="font-weight: 500;">-</div>
+                            </div>
+                        </div>
+
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem;">
+                                <label
+                                    style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">KONTAK
+                                    WHATSAPP</label>
+                                <div id="vIndKontak" style="font-weight: 500;">-</div>
+                            </div>
+                            <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem;">
+                                <label
+                                    style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">EMAIL</label>
+                                <div id="vIndEmail" style="font-weight: 500;">-</div>
+                            </div>
+                        </div>
+
+                        <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem;">
+                            <label
+                                style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">ALAMAT</label>
+                            <div id="vIndAlamat" style="font-weight: 500; line-height: 1.5;">-</div>
+                        </div>
+
+                        <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem;">
+                            <label
+                                style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">MENTOR</label>
+                            <div id="vIndMentor" style="font-weight: 500;">-</div>
+                        </div>
+
+                        <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem;">
+                            <label
+                                style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">DESKRIPSI</label>
+                            <div id="vIndDesc" style="font-weight: 500; line-height: 1.5;">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Mode Container -->
+                <form id="industryForm" class="hidden" onsubmit="saveIndustryData(event)">
+                    <h3 style="margin-bottom: 1.5rem;">Edit Data DU/DI</h3>
+                    <input type="hidden" id="indId">
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Nama Industri</label>
+                            <input type="text" id="indNama" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Jurusan Terkait</label>
+                            <div id="indJurusanChecklist" class="dropdown-checklist">
+                                <div class="anchor" onclick="toggleChecklist()">
+                                    <span id="jurusanCount">Pilih Jurusan...</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div id="checklistItems" class="items hidden">
+                                    <!-- Populated JS -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Bidang Usaha</label>
+                            <input type="text" id="indBidang" required placeholder="Contoh: Perbankan, IT">
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Alamat Lengkap</label>
+                            <textarea id="indAlamat" required style="min-height: 80px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Nama Pimpinan</label>
+                            <input type="text" id="indPimpinan">
+                        </div>
+                        <div class="form-group">
+                            <label>Email Industri</label>
+                            <input type="email" id="indEmail">
+                        </div>
+                        <div class="form-group">
+                            <label>Nama Mentor</label>
+                            <input type="text" id="indMentor">
+                        </div>
+                        <div class="form-group">
+                            <label>Kontak Mentor (WA)</label>
+                            <input type="text" id="indKontak">
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Lokasi (Pilih di Peta)</label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <input type="text" id="indMapSearchInput" placeholder="Cari alamat/tempat..."
+                                    style="flex:1;">
+                                <button type="button" class="btn btn-secondary" onclick="searchLocationOnMapInd()"
+                                    style="width: auto;"><i class="fas fa-search"></i></button>
+                                <button type="button" class="btn btn-secondary" onclick="currentLocationOnMapInd()"
+                                    style="width: auto;" title="Gunakan Lokasi Saat Ini"><i
+                                        class="fas fa-location-arrow"></i></button>
+                            </div>
+                            <div id="industryPickerMap" class="map-container"></div>
+                            <input type="hidden" id="indLat">
+                            <input type="hidden" id="indLng">
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Deskripsi Tambahan</label>
+                            <textarea id="indDesc" style="min-height: 80px;"></textarea>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="submit" class="btn btn-primary" id="btnSaveIndustry">Simpan Perubahan</button>
+                        <button type="button" class="btn btn-secondary"
+                            onclick="toggleIndustryEdit(false)">Batal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <ul class="bottom-nav-list">
+            <li>
+                <a href="#" class="bottom-nav-link active" id="mobile-nav-home" onclick="showSection('home')">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="bottom-nav-link" id="mobile-nav-journals" onclick="showSection('journals')">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Jurnal</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="bottom-nav-link" id="mobile-nav-attendance" onclick="showSection('attendance')">
+                    <i class="fas fa-user-check"></i>
+                    <span>Absensi</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="bottom-nav-link" onclick="toggleMobileSidebar()">
+                    <i class="fas fa-bars"></i>
+                    <span>Menu</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Journals Validation Modal -->
+    <div id="journalModal" class="hidden"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="glass"
+            style="width: 90%; max-width: 500px; padding: 2rem; border-radius: var(--radius); position: relative;">
+            <button class="btn-close" onclick="toggleJournalModal(false)"
+                style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 style="margin-bottom: 1.5rem; color: var(--primary);">Validasi Jurnal</h3>
+            <form id="valJournalForm" onsubmit="saveJournalValidation(event)">
+                <input type="hidden" id="valJournalId">
+                <div
+                    style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.5rem; font-size: 0.9rem;">
+                    <div><strong style="color: var(--text-muted)">Siswa:</strong> <span id="valJournalStudent">-</span>
+                    </div>
+                    <div style="margin-top: 0.5rem;"><strong style="color: var(--text-muted)">Aktifitas:</strong></div>
+                    <div id="valJournalActivity" style="font-style: italic; margin-top: 0.25rem;">-</div>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="valJournalStatus" class="form-control" required>
+                        <option value="Disetujui">Setujui</option>
+                        <option value="Revisi">Minta Revisi</option>
+                        <option value="Ditolak">Tolak</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Feedback / Catatan</label>
+                    <textarea id="valJournalFeedback" placeholder="Masukkan saran atau alasan revisi..."
+                        style="min-height: 100px;"></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn" onclick="toggleJournalModal(false)"
+                        style="background: #e2e8f0; flex: 1;">Batal</button>
+                    <button type="submit" id="btnSaveValJournal" class="btn btn-primary"
+                        style="flex: 2;">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="attendanceModal" class="hidden"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="glass"
+            style="width: 90%; max-width: 500px; padding: 2rem; border-radius: var(--radius); position: relative; max-height: 90vh; overflow-y: auto;">
+            <button class="btn-close" onclick="toggleAttendanceModal(false)"
+                style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 style="margin-bottom: 1.5rem; color: var(--primary);">Detail & Validasi Kehadiran</h3>
+            <div id="attendanceDetailContent"></div>
+
+            <form id="attendanceValForm" onsubmit="saveAttendanceValidation(event)"
+                style="margin-top: 1.5rem; border-top: 1px solid #f1f5f9; padding-top: 1.5rem;">
+                <input type="hidden" id="valAttId">
+                <div class="form-group">
+                    <label>Validasi Mentor</label>
+                    <select id="valAttStatus" class="form-control" required>
+                        <option value="Pending">Pending</option>
+                        <option value="Disetujui">Setujui</option>
+                        <option value="Ditolak">Tolak</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Catatan / Feedback</label>
+                    <textarea id="valAttFeedback" placeholder="Masukkan catatan atau alasan jika ditolak..."
+                        style="min-height: 80px;"></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="button" class="btn" onclick="toggleAttendanceModal(false)"
+                        style="background: #e2e8f0; flex: 1;">Batal</button>
+                    <button type="submit" id="btnSaveValAtt" class="btn btn-primary" style="flex: 2;">Simpan
+                        Validasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Evaluation Modal -->
+    <div id="evaluationModal" class="hidden"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="glass"
+            style="width: 95%; max-width: 800px; padding: 2rem; border-radius: var(--radius); position: relative; max-height: 95vh; overflow-y: auto;">
+            <button class="btn-close" onclick="toggleEvaluationModal(false)"
+                style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 style="margin-bottom: 1.5rem; color: var(--primary);">Penilaian Siswa PKL</h3>
+            <form id="evaluationForm" onsubmit="saveEvaluation(event)">
+                <input type="hidden" id="evalNis">
+                <input type="hidden" id="evalBatch">
+                <div
+                    style="background: #f0f9ff; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div style="display: flex; gap: 2rem;">
+                        <div><label style="font-size: 0.75rem; color: var(--text-muted);">Siswa:</label>
+                            <div id="evalStudentName" style="font-weight: 600;">-</div>
+                        </div>
+                        <div><label style="font-size: 0.75rem; color: var(--text-muted);">NIS:</label>
+                            <div id="evalStudentNis" style="font-weight: 600;">-</div>
+                        </div>
+                    </div>
+                    <div style="border-top: 1px solid #e0f2fe; padding-top: 0.5rem; display: flex; gap: 1.5rem;">
+                        <div style="font-size: 0.85rem;"><i class="fas fa-user-times" style="color:var(--danger)"></i>
+                            Alpa: <span id="recapAlpa" style="font-weight:600">0</span></div>
+                        <div style="font-size: 0.85rem;"><i class="fas fa-id-card-alt" style="color:var(--warning)"></i>
+                            Ijin: <span id="recapIjin" style="font-weight:600">0</span></div>
+                        <div style="font-size: 0.85rem;"><i class="fas fa-briefcase-medical"
+                                style="color:var(--primary)"></i> Sakit: <span id="recapSakit"
+                                style="font-weight:600">0</span></div>
+                    </div>
+                </div>
+
+                <!-- Penilaian Kompetensi -->
+                <div
+                    style="margin-top: 1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                    <h4 style="color: var(--primary); font-size: 0.95rem;"><i class="fas fa-graduation-cap"></i> 1.
+                        Penilaian Kompetensi</h4>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="form-group">
+                        <label>Menerapkan Soft Skills yang dibutuhkan dalam dunia kerja (0-100)</label>
+                        <input type="number" id="evalSoftskill" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Menerapkan Kompetensi Teknis yang sudah dipelajari di sekolah dan / baru dipelajari di
+                            tempat PKL (0-100)</label>
+                        <input type="number" id="evalTechnical" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Menerapkan Norma, POS, dan K3LH yang ada di tempat PKL (0-100)</label>
+                        <input type="number" id="evalPos" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Memahami alur bisnis dunia kerja tempat PKL (0-100)</label>
+                        <input type="number" id="evalBisnisDudi" min="0" max="100" required>
+                    </div>
+                </div>
+
+                <!-- Penilaian Sikap -->
+                <div style="border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                    <h4 style="color: var(--primary); font-size: 0.95rem;"><i class="fas fa-user-check"></i> 2.
+                        Penilaian Sikap</h4>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="form-group">
+                        <label>Kedisiplinan (0-100)</label>
+                        <input type="number" id="evalDisiplin" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Kerja Sama (0-100)</label>
+                        <input type="number" id="evalKerjasama" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Inisiatif (0-100)</label>
+                        <input type="number" id="evalInisiatif" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Kerajinan (0-100)</label>
+                        <input type="number" id="evalKerajinan" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggung Jawab (0-100)</label>
+                        <input type="number" id="evalTanggungJawab" min="0" max="100" required>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Catatan Mentor</label>
+                        <textarea id="evalNotes" style="min-height: 80px;"></textarea>
+                    </div>
+                    <div
+                        style="grid-column: span 2; display: flex; gap: 1rem; align-items: center; background: #fffbeb; padding: 1rem; border-radius: 0.5rem; border: 1px solid #fde68a;">
+                        <div style="flex: 1;"><label>Sakit (Hari)</label><input type="number" id="evalSakit" min="0"
+                                value="0"></div>
+                        <div style="flex: 1;"><label>Ijin (Hari)</label><input type="number" id="evalIjin" min="0"
+                                value="0"></div>
+                        <div style="flex: 1;"><label>Alpa (Hari)</label><input type="number" id="evalAlpa" min="0"
+                                value="0"></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2.5rem;">
+                    <button type="button" class="btn" onclick="toggleEvaluationModal(false)"
+                        style="background: #e2e8f0; flex: 1;">Batal</button>
+                    <button type="submit" id="btnSaveEval" class="btn btn-primary" style="flex: 2;">Simpan
+                        Penilaian</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student Detail Modal (Matching Admin View but Read-only) -->
+    <div id="studentDetailModal" class="hidden"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="glass"
+            style="width: 95%; max-width: 700px; padding: 2rem; border-radius: var(--radius); position: relative; max-height: 90vh; overflow-y: auto;">
+            <button class="btn-close" onclick="toggleStudentDetailModal(false)"
+                style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 style="margin-bottom: 2rem; color: var(--primary);">Detail Data Siswa</h3>
+
+            <div
+                style="display: flex; gap: 2rem; margin-bottom: 2.5rem; flex-wrap: wrap; border-bottom: 1px solid #f1f5f9; padding-bottom: 2rem;">
+                <img id="detailSiswaPhoto" src=""
+                    style="width: 150px; height: 150px; border-radius: 1rem; object-fit: cover; border: 4px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <div style="flex: 1; min-width: 250px;">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); display: block;">NAMA
+                            LENGKAP</label>
+                        <div id="detailSiswaNama" style="font-size: 1.25rem; font-weight: 700;">-</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block;">NIS</label>
+                            <div id="detailSiswaNis" style="font-weight: 600;">-</div>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block;">KELAS /
+                                JURUSAN</label>
+                            <div id="detailSiswaKelasJurusan" style="font-weight: 600;">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div>
+                    <label
+                        style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">TEMPAT,
+                        TGL LAHIR</label>
+                    <div id="detailSiswaTtl" style="font-weight: 500;">-</div>
+                </div>
+                <div>
+                    <label
+                        style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">GOL.
+                        DARAH</label>
+                    <div id="detailSiswaDarah" style="font-weight: 500;">-</div>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label
+                        style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">ALAMAT
+                        SISWA</label>
+                    <div id="detailSiswaAlamat" style="font-weight: 500;">-</div>
+                </div>
+                <div>
+                    <label
+                        style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">KONTAK
+                        SISWA</label>
+                    <div id="detailSiswaKontak" style="font-weight: 500;">-</div>
+                </div>
+                <div>
+                    <label
+                        style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">NAMA
+                        ORANG TUA</label>
+                    <div id="detailSiswaOrtu" style="font-weight: 500;">-</div>
+                </div>
+                <div>
+                    <label
+                        style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">KONTAK
+                        ORANG TUA</label>
+                    <div id="detailSiswaKontakOrtu" style="font-weight: 500;">-</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2.5rem; text-align: right; border-top: 1px solid #f1f5f9; padding-top: 1.5rem;">
+                <button class="btn btn-primary" onclick="toggleStudentDetailModal(false)"
+                    style="width: auto; padding: 0.75rem 2rem;">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="hidden"
+        style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index: 1100;">
+        <div class="glass"
+            style="width: 90%; max-width: 400px; max-height: 90vh; padding: 2rem; border-radius: var(--radius); position: relative; overflow-y: auto; overflow-x: hidden;">
+            <button class="btn-close" onclick="toggleProfileModal(false)"
+                style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 id="profModalTitle" style="margin-bottom: 1.5rem; text-align: center;">Profil Saya</h3>
+
+            <!-- 1. View State -->
+            <div id="profViewContent">
+                <div class="profile-avatar-wrapper" style="cursor: default;">
+                    <img id="profViewAvatar" src="" alt="Avatar" class="avatar-large" referrerpolicy="no-referrer">
+                </div>
+                <div style="display: grid; gap: 0.75rem; margin-bottom: 2rem;">
+                    <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                        <label style="font-size: 0.7rem; color: var(--text-muted); display: block;">NAMA</label>
+                        <div id="pViewNama" style="font-weight: 500;">-</div>
+                    </div>
+                    <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                        <label style="font-size: 0.7rem; color: var(--text-muted); display: block;">USERNAME</label>
+                        <div id="pViewUser">-</div>
+                    </div>
+                    <div
+                        style="border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                        <div>
+                            <label style="font-size: 0.7rem; color: var(--text-muted); display: block;">TEMPAT
+                                INDUSTRI</label>
+                            <div id="pViewPklName" style="font-weight: 500;">-</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <label style="font-size: 0.7rem; color: var(--text-muted); display: block;">KONTAK</label>
+                            <div id="pViewKontak">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <button class="btn btn-primary" onclick="switchProfileState('edit')" style="width: 100%;"><i
+                            class="fas fa-edit"></i> Edit Profil</button>
+                    <button class="btn" onclick="switchProfileState('password')"
+                        style="width: 100%; background: #f1f5f9;"><i class="fas fa-key"></i> Ganti Password</button>
+                </div>
+            </div>
+
+            <!-- 2. Edit Profile State -->
+            <div id="profEditContent" class="hidden">
+                <div class="profile-avatar-wrapper" onclick="document.getElementById('profilePhotoInput').click()"
+                    title="Klik untuk ubah foto">
+                    <img id="profModalAvatar" src="" alt="Avatar" class="avatar-large" referrerpolicy="no-referrer">
+                    <div class="overlay"><i class="fas fa-camera"></i></div>
+                    <input type="file" id="profilePhotoInput" hidden accept="image/*"
+                        onchange="handleAvatarPreview(this)">
+                </div>
+                <form id="profileForm" onsubmit="saveProfile(event)">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="profUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Kontak Mentor (WhatsApp)</label>
+                        <input type="text" id="profEditKontak" placeholder="Contoh: 0812...">
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="button" class="btn" onclick="switchProfileState('view')"
+                            style="background: #e2e8f0; flex: 1;">Batal</button>
+                        <button type="submit" class="btn btn-primary" id="btnSaveProfile"
+                            style="flex: 2;">Simpan</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 3. Change Password State -->
+            <div id="profPassContent" class="hidden">
+                <form id="passForm" onsubmit="savePassword(event)">
+                    <div class="form-group">
+                        <label>Password Lama</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="profOldPass" required placeholder="Masukkan password saat ini">
+                            <button type="button" class="password-toggle"
+                                onclick="togglePasswordVisibility('profOldPass')">
+                                <i id="toggleIcon-profOldPass" class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password Baru</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="profNewPass" required placeholder="Masukkan password baru">
+                            <button type="button" class="password-toggle"
+                                onclick="togglePasswordVisibility('profNewPass')">
+                                <i id="toggleIcon-profNewPass" class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="button" class="btn" onclick="switchProfileState('view')"
+                            style="background: #e2e8f0; flex: 1;">Batal</button>
+                        <button type="submit" class="btn btn-primary" id="btnSavePassword" style="flex: 2;">Update
+                            Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        const user = AUTH.checkSession();
+        if (!user || user.role !== 'mentor') window.location.href = '../index.html';
+
+        function showToast(message, type = 'success') {
+            API.showNotification(message, type);
+        }
+
+        function toggleProfileDropdown(e) {
+            if (e) e.stopPropagation();
+            const dropdown = document.getElementById('profileDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        window.onclick = function (event) {
+            const dropdown = document.getElementById('profileDropdown');
+            if (dropdown && dropdown.classList.contains('active')) {
+                if (!event.target.closest('.profile-dropdown-container')) {
+                    dropdown.classList.remove('active');
+                }
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function formatWhatsApp(number) {
+            if (!number || number === '-') return '-';
+            let clean = number.replace(/\D/g, '');
+            if (clean.startsWith('0')) clean = '62' + clean.substring(1);
+            if (!clean.startsWith('62')) clean = '62' + clean;
+            return `<a href="https://wa.me/${clean}" target="_blank" style="color: #25D366; text-decoration: none;"><i class="fab fa-whatsapp"></i> ${number}</a>`;
+        }
+
+        function updateUserUI() {
+            const currentUser = AUTH.getUser();
+            if (!currentUser) return;
+
+            // Desktop Sidebar
+            document.getElementById('userName').textContent = currentUser.nama;
+            document.getElementById('welcomeName').textContent = currentUser.nama;
+
+            // Mobile Header & Dropdown
+            const avatarUrls = [
+                document.getElementById('userAvatar'),
+                document.getElementById('headerAvatar'),
+                document.getElementById('profViewAvatar'),
+                document.getElementById('profModalAvatar')
+            ];
+
+            const fallbackUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentUser.nama) + '&background=random';
+            const avatarSrc = currentUser.photo ? getDriveThumbnail(currentUser.photo) : fallbackUrl;
+
+            avatarUrls.forEach(img => {
+                if (img) {
+                    img.onerror = function () { this.onerror = null; this.src = fallbackUrl; };
+                    img.src = avatarSrc;
+                }
+            });
+        }
+        updateUserUI();
+
+        function getDriveThumbnail(urlOrId) {
+            if (!urlOrId) return '';
+            let id = urlOrId;
+            if (urlOrId.includes('id=')) {
+                id = urlOrId.split('id=')[1].split('&')[0];
+            } else if (urlOrId.includes('/d/')) {
+                id = urlOrId.split('/d/')[1].split('/')[0];
+            }
+            return `https://drive.google.com/thumbnail?id=${id}&sz=w600`;
+        }
+
+        function toggleProfileModal(show) {
+            const modal = document.getElementById('profileModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        function switchProfileState(state) {
+            document.getElementById('profViewContent').classList.toggle('hidden', state !== 'view');
+            document.getElementById('profEditContent').classList.toggle('hidden', state !== 'edit');
+            document.getElementById('profPassContent').classList.toggle('hidden', state !== 'password');
+
+            const titles = { view: 'Profil Saya', edit: 'Edit Profil', password: 'Ganti Password' };
+            document.getElementById('profModalTitle').textContent = titles[state] || 'Profil';
+        }
+
+        async function openProfileModal() {
+            const currentUser = AUTH.getUser();
+            document.getElementById('pViewNama').textContent = currentUser.nama;
+            document.getElementById('pViewUser').textContent = currentUser.username;
+
+            try {
+                const [resMentor, resPkl] = await Promise.all([
+                    API.getData('LOGINMENTOR'),
+                    API.getData('LOKASIPKL')
+                ]);
+
+                const dbUser = resMentor.data.find(u => u.username === currentUser.username);
+                if (dbUser) {
+                    document.getElementById('profUsername').value = dbUser.username || '';
+
+                    if (dbUser.ID_PKL) {
+                        const pkl = resPkl.data.find(p => p.ID_PKL == dbUser.ID_PKL);
+                        if (pkl) {
+                            document.getElementById('pViewPklName').textContent = pkl.NamaTempat;
+                            document.getElementById('pViewKontak').textContent = pkl.KontakMentor || '-';
+                            document.getElementById('profEditKontak').value = pkl.KontakMentor || '';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error fetching profile details:', e);
+            }
+
+            const fallbackUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentUser.nama) + '&background=random';
+            const avatarSrc = currentUser.photo ? getDriveThumbnail(currentUser.photo) : fallbackUrl;
+            const setAvatarWithFallback = (el) => { el.onerror = function () { this.onerror = null; this.src = fallbackUrl; }; el.src = avatarSrc; };
+            setAvatarWithFallback(document.getElementById('profViewAvatar'));
+            setAvatarWithFallback(document.getElementById('profModalAvatar'));
+
+            switchProfileState('view');
+            toggleProfileModal(true);
+        }
+
+        // --- Navigation ---
+        let currentSection = 'journals';
+        function showSection(sectionId) {
+            currentSection = sectionId;
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            const target = document.getElementById('section-' + sectionId);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+            if (document.getElementById('nav-' + sectionId)) {
+                document.getElementById('nav-' + sectionId).classList.add('active');
+            }
+
+            const titles = {
+                home: 'Beranda',
+                journals: 'Validasi Jurnal Siswa',
+                attendance: 'Monitoring Absensi Siswa',
+                evaluation: 'Penilaian (Evaluasi) Siswa',
+                students: 'Data Siswa Industri',
+                industry: 'Data Industri (DU/DI)'
+            };
+            document.getElementById('sectionTitle').textContent = titles[sectionId] || 'Panel Mentor';
+
+            if (sectionId === 'journals') loadJournalData();
+            if (sectionId === 'attendance') loadAttendanceData();
+            if (sectionId === 'evaluation') loadEvaluationData();
+            if (sectionId === 'students') loadStudentListData();
+            if (sectionId === 'industry') loadIndustryData();
+        }
+
+        // --- Core Data Loading ---
+        let cachedAssignedStudents = [];
+        let cachedPklLocation = null;
+        const statusLabelMap = { 'H': 'Hadir', 'S': 'Sakit', 'I': 'Izin', 'L': 'Libur', 'A': 'Alpa' };
+        const statusColorMap = { 'H': 'var(--success)', 'S': 'var(--danger)', 'I': 'var(--warning)', 'L': 'var(--primary)', 'A': '#64748b' };
+
+        async function getAssignedStudents() {
+            const currentUser = AUTH.getUser();
+            document.getElementById('welcomeName').textContent = currentUser.nama;
+
+            const [mentorRes, pklRes, siswaRes, journalsRes, attendRes, evalRes] = await Promise.all([
+                API.getData('LOGINMENTOR'),
+                API.getData('LOKASIPKL'),
+                API.getData('DATASISWA'),
+                API.getData('JURNAL'),
+                API.getData('KEHADIRAN'),
+                API.getData('EVALUASI')
+            ]);
+
+            const dbMentor = mentorRes.data.find(m => m.username === currentUser.username);
+            if (!dbMentor || !dbMentor.ID_PKL) {
+                showToast('ID PKL Mentor tidak ditemukan!', 'danger');
+                return [];
+            }
+
+            // Sync Name if different from session
+            if (dbMentor.nama !== currentUser.nama) {
+                const session = JSON.parse(localStorage.getItem('pkl_session'));
+                session.nama = dbMentor.nama;
+                localStorage.setItem('pkl_session', JSON.stringify(session));
+                updateUserUI(); // Refresh Sidebar
+                document.getElementById('welcomeName').textContent = dbMentor.nama; // Refresh Dashboard
+            }
+
+            cachedPklLocation = pklRes.data.find(p => p.ID_PKL == dbMentor.ID_PKL);
+            if (cachedPklLocation) {
+                document.getElementById('headerIndustryName').textContent = cachedPklLocation.NamaTempat;
+                document.getElementById('dashIndustryName').textContent = cachedPklLocation.NamaTempat;
+            }
+
+            // In our system, students in DATAPKL are assigned to ID_PKL
+            // We need to fetch all students where their ID_PKL matches the mentor's ID_PKL
+            const [dataPklRes] = await Promise.all([API.getData('DATAPKL')]);
+
+            const activePlacements = dataPklRes.data.filter(p => (p.ID_PKL || p.id_pkl) == dbMentor.ID_PKL);
+            const nisList = activePlacements.map(p => (p.NIS || p.nis));
+
+            cachedAssignedStudents = siswaRes.data.filter(s => nisList.includes(s.nis) || nisList.includes(s.NIS));
+            document.getElementById('dashStudentCount').textContent = cachedAssignedStudents.length;
+
+            window.allJournals = journalsRes.data;
+            window.allAttendance = attendRes.data;
+            window.allEvaluations = evalRes.data;
+
+            return cachedAssignedStudents;
+        }
+
+        // --- Journal Validation ---
+        function loadJournalData() {
+            const tbody = document.getElementById('journalTableBody');
+            const nisList = cachedAssignedStudents.map(s => s.nis);
+            const myJournals = window.allJournals.filter(j => nisList.includes(j.NIS));
+
+            if (myJournals.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Belum ada jurnal siswa.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            myJournals.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal)).forEach(j => {
+                const s = cachedAssignedStudents.find(stu => stu.nis == j.NIS);
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #f1f5f9';
+
+                let statusColor = '#94a3b8';
+                if (j.status === 'Disetujui') statusColor = 'var(--success)';
+                else if (j.status === 'Revisi') statusColor = 'var(--warning)';
+                else if (j.status === 'Ditolak') statusColor = 'var(--danger)';
+
+                tr.innerHTML = `
+                    <td data-label="Nama Siswa" style="padding: 1rem;">
+                        <div style="font-weight: 600;">${s ? s.nama : j.NIS}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">NIS: ${j.NIS}</div>
+                    </td>
+                    <td data-label="Tanggal" style="padding: 1rem;">${formatDate(j.Tanggal)}</td>
+                    <td data-label="Aktivitas" style="padding: 1rem; max-width: 300px;">${j.Aktifitas}</td>
+                    <td data-label="Status" style="padding: 1rem;">
+                        <span class="badge" style="background:${statusColor}; color:white; padding: 0.2rem 0.6rem; border-radius:1rem; font-size:0.75rem;">${j.status || 'Pending'}</span>
+                    </td>
+                    <td data-label="Aksi" style="padding: 1rem;">
+                        <button class="btn btn-primary" style="width:auto; padding:0.4rem 0.6rem;" onclick="openJournalValidation('${j.ID_Jurnal}')">Validasi</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleJournalModal(show) {
+            const modal = document.getElementById('journalModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        function openJournalValidation(id) {
+            const j = window.allJournals.find(item => item.ID_Jurnal == id);
+            if (!j) return;
+
+            const s = cachedAssignedStudents.find(stu => stu.nis == j.NIS);
+            document.getElementById('valJournalId').value = j.ID_Jurnal;
+            document.getElementById('valJournalStudent').textContent = s ? s.nama : j.NIS;
+            document.getElementById('valJournalActivity').textContent = j.Aktifitas;
+            document.getElementById('valJournalStatus').value = j.status === 'Pending' ? 'Disetujui' : j.status;
+            document.getElementById('valJournalFeedback').value = j.feedback || '';
+
+            toggleJournalModal(true);
+        }
+
+        async function saveJournalValidation(e) {
+            e.preventDefault();
+            const id = document.getElementById('valJournalId').value;
+            const status = document.getElementById('valJournalStatus').value;
+            const feedback = document.getElementById('valJournalFeedback').value;
+            const btn = document.getElementById('btnSaveValJournal');
+
+            btn.disabled = true;
+            btn.textContent = 'Menyimpan...';
+
+            try {
+                const currentUser = AUTH.getUser();
+                const res = await API.updateData('JURNAL', id, { status, feedback });
+                if (res.status === 'success') {
+                    showToast('Jurnal divalidasi!', 'success');
+                    toggleJournalModal(false);
+                    // Refresh local data
+                    const idx = window.allJournals.findIndex(item => item.ID_Jurnal == id);
+                    if (idx !== -1) {
+                        window.allJournals[idx].status = status;
+                        window.allJournals[idx].feedback = feedback;
+                    }
+                    loadJournalData();
+                } else { throw new Error(res.message); }
+            } catch (err) {
+                showToast('Gagal: ' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Simpan';
+            }
+        }
+
+        // --- Attendance Monitoring ---
+        function loadAttendanceData() {
+            const tbody = document.getElementById('attendanceTableBody');
+            const nisList = cachedAssignedStudents.map(s => s.nis);
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const currentHour = now.getHours();
+
+            // Get attendance for assigned students
+            const myAttendance = window.allAttendance.filter(a => nisList.includes(a.NIS));
+
+            // Logic for Auto Alpa: 
+            // We want to show ALL students today. If missing and past 16:00, show as Alpa.
+            // If historical data, we just show what's in the sheet.
+
+            // Let's create a combined list: historical + current synthesized alpa
+            let displayData = [...myAttendance];
+
+            if (currentHour >= 16) {
+                cachedAssignedStudents.forEach(s => {
+                    const hasToday = myAttendance.some(a => a.NIS == s.nis && (a.Tanggal || "").split('T')[0] === todayStr);
+                    if (!hasToday) {
+                        displayData.push({
+                            ID_Absen: 'AUTO-' + s.nis + '-' + todayStr,
+                            NIS: s.nis,
+                            Tanggal: todayStr,
+                            time_in: '--:--',
+                            time_out: '--:--',
+                            StatusAbsen: 'A',
+                            Status: 'Disetujui', // Auto alpa is usually final
+                            JarakAbsen: '-',
+                            isAuto: true
+                        });
+                    }
+                });
+            }
+
+            // Reset selection state
+            document.getElementById('selectAllAttendance').checked = false;
+            updateAttendanceBulkUI();
+
+            if (displayData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">Belum ada data absensi.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            displayData.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal)).forEach(a => {
+                const s = cachedAssignedStudents.find(stu => stu.nis == a.NIS);
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #f1f5f9';
+
+                const currentStatusAbsen = a.StatusAbsen || 'H';
+                const label = statusLabelMap[currentStatusAbsen] || currentStatusAbsen;
+                const bgColor = statusColorMap[currentStatusAbsen] || 'var(--primary)';
+
+                tr.innerHTML = `
+                    <td data-label="Pilih" style="padding: 1rem;">
+                        ${a.isAuto ? '<i class="fas fa-robot" title="Auto Alpa"></i>' : `<input type="checkbox" class="att-row-checkbox" value="${a.ID_Absen}" onchange="updateAttendanceBulkUI()">`}
+                    </td>
+                    <td data-label="Nama Siswa" style="padding: 1rem;">
+                        <div style="font-weight: 600;">${s ? s.nama : a.NIS}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">NIS: ${a.NIS}</div>
+                    </td>
+                    <td data-label="Tanggal" style="padding: 1rem;">${formatDate(a.Tanggal)}</td>
+                    <td data-label="Waktu" style="padding: 1rem;">
+                        <div style="font-size: 0.85rem;"><i class="fas fa-sign-in-alt" style="color:var(--success)"></i> ${a.time_in || '--:--'}</div>
+                        <div style="font-size: 0.85rem; margin-top:0.25rem;"><i class="fas fa-sign-out-alt" style="color:var(--danger)"></i> ${a.time_out || '--:--'}</div>
+                    </td>
+                    <td data-label="Status" style="padding: 1rem;">
+                        <span class="badge" style="background:${bgColor}; color:white; padding: 0.2rem 0.6rem; border-radius:1rem; font-size:0.75rem;">${label}</span>
+                        <div style="font-size: 0.7rem; margin-top: 0.25rem;">
+                            ${a.isAuto ? '<span style="color:var(--danger)"><i class="fas fa-info-circle"></i> Otomatis</span>' : (
+                        a.Status === 'Disetujui' ? '<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Disetujui</span>' :
+                            a.Status === 'Ditolak' ? '<span style="color:var(--danger)"><i class="fas fa-times-circle"></i> Ditolak</span>' :
+                                '<span style="color:var(--text-muted)"><i class="fas fa-clock"></i> Pending</span>'
+                    )}
+                        </div>
+                    </td>
+                    <td data-label="Aksi" style="padding: 1rem;">
+                        <div style="display: flex; gap: 0.4rem;">
+                            ${a.isAuto ? '<span style="font-size:0.75rem; color:var(--text-muted)">N/A</span>' : `
+                                <button class="btn" style="width:32px; height:32px; padding:0; background: ${a.Status === 'Disetujui' ? 'var(--success)' : '#f1f5f9'}; color: ${a.Status === 'Disetujui' ? 'white' : 'var(--success)'}; border: 1px solid ${a.Status === 'Disetujui' ? 'var(--success)' : '#e2e8f0'};" 
+                                        title="Setujui" onclick="quickValidateAttendance('${a.ID_Absen}', 'Disetujui')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn" style="width:32px; height:32px; padding:0; background: ${a.Status === 'Ditolak' ? 'var(--danger)' : '#f1f5f9'}; color: ${a.Status === 'Ditolak' ? 'white' : 'var(--danger)'}; border: 1px solid ${a.Status === 'Ditolak' ? 'var(--danger)' : '#e2e8f0'};" 
+                                        title="Tolak / Alpha" onclick="quickValidateAttendance('${a.ID_Absen}', 'Ditolak')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <button class="btn" style="width:auto; padding:0.4rem 0.6rem; background: #f1f5f9; font-size: 0.8rem;" onclick="openAttendanceDetail('${a.ID_Absen}')">
+                                    <i class="fas fa-eye"></i> Detail
+                                </button>
+                            `}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleAttendanceSelectAll(checked) {
+            document.querySelectorAll('.att-row-checkbox').forEach(cb => cb.checked = checked);
+            updateAttendanceBulkUI();
+        }
+
+        function updateAttendanceBulkUI() {
+            const checked = document.querySelectorAll('.att-row-checkbox:checked');
+            const bar = document.getElementById('attendanceBulkActions');
+            const count = document.getElementById('attendanceSelectedCount');
+
+            if (checked.length > 0) {
+                bar.classList.remove('hidden');
+                count.textContent = `${checked.length} terpilih`;
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        async function quickValidateAttendance(id, status) {
+            try {
+                const updateData = { Status: status };
+                if (status === 'Ditolak') updateData.StatusAbsen = 'A';
+                // If Disetujui, we keep the original StatusAbsen (H/S/I/L)
+
+                const res = await API.updateData('KEHADIRAN', id, updateData);
+                if (res.status === 'success') {
+                    showToast(`Absensi ${status.toLowerCase()}`, 'success');
+                    const idx = window.allAttendance.findIndex(item => item.ID_Absen == id);
+                    if (idx !== -1) {
+                        window.allAttendance[idx].Status = status;
+                        if (updateData.StatusAbsen) window.allAttendance[idx].StatusAbsen = updateData.StatusAbsen;
+                    }
+                    loadAttendanceData();
+                } else { throw new Error(res.message); }
+            } catch (err) {
+                showToast('Gagal: ' + err.message, 'danger');
+            }
+        }
+
+        async function bulkValidateAttendance(status) {
+            const checked = Array.from(document.querySelectorAll('.att-row-checkbox:checked')).map(cb => cb.value);
+            if (checked.length === 0) return;
+
+            if (!confirm(`Tentukan ${checked.length} absensi terpilih sebagai "${status}"?`)) return;
+
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+            let successCount = 0;
+
+            try {
+                for (const id of checked) {
+                    const updateData = { Status: status };
+                    if (status === 'Ditolak') updateData.StatusAbsen = 'A';
+
+                    const res = await API.updateData('KEHADIRAN', id, updateData);
+                    if (res.status === 'success') {
+                        successCount++;
+                        const idx = window.allAttendance.findIndex(item => item.ID_Absen == id);
+                        if (idx !== -1) {
+                            window.allAttendance[idx].Status = status;
+                            if (updateData.StatusAbsen) window.allAttendance[idx].StatusAbsen = updateData.StatusAbsen;
+                        }
+                    }
+                }
+                showToast(`${successCount} absensi berhasil divalidasi!`, 'success');
+                loadAttendanceData();
+            } catch (err) {
+                showToast('Beberapa kegagalan terjadi: ' + err.message, 'danger');
+                loadAttendanceData();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        function toggleAttendanceModal(show) {
+            const modal = document.getElementById('attendanceModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        function openAttendanceDetail(id) {
+            const a = window.allAttendance.find(item => item.ID_Absen == id);
+            if (!a) return;
+
+            const s = cachedAssignedStudents.find(stu => stu.nis == a.NIS);
+            const content = document.getElementById('attendanceDetailContent');
+
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">Foto Absen</label>
+                        <img src="${a.photo ? getDriveThumbnail(a.photo) : 'https://placehold.co/400x300?text=No+Photo'}" 
+                             style="width: 100%; height: 200px; object-fit: cover; border-radius: 0.5rem; border: 1px solid #e2e8f0; cursor: pointer;"
+                             onclick="window.open('${a.photo}','_blank')">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">Lokasi (Maps)</label>
+                        <div style="width: 100%; height: 200px; background: #f8fafc; border-radius: 0.5rem; border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;">
+                            <i class="fas fa-map-marker-alt" style="font-size: 2rem; color: var(--danger);"></i>
+                            <a href="https://www.google.com/maps?q=${a.lat},${a.lng}" target="_blank" class="btn" style="width: auto; font-size: 0.8rem; background: var(--primary); color: white;">Buka di Google Maps</a>
+                        </div>
+                    </div>
+                    <div style="grid-column: span 2; background: #f8fafc; padding: 1rem; border-radius: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--text-muted)">NIS / Nama:</span>
+                            <span style="font-weight: 600;">${a.NIS} / ${s ? s.nama : '-'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--text-muted)">Waktu:</span>
+                            <span>${a.time_in} - ${a.time_out || 'Belum Pulang'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--text-muted)">Status Absen:</span>
+                            <span style="font-weight: 600;">${statusLabelMap[a.StatusAbsen || 'H'] || (a.StatusAbsen || 'Hadir')}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-muted)">Jarak dari Lokasi:</span>
+                            <span style="font-weight: 600; color: ${parseFloat(a.JarakAbsen) > 100 ? 'var(--danger)' : 'var(--success)'}">${a.JarakAbsen} meter</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Populate validation form
+            document.getElementById('valAttId').value = a.ID_Absen;
+            document.getElementById('valAttStatus').value = a.Status || 'Pending';
+            document.getElementById('valAttFeedback').value = a.Feedback || '';
+
+            toggleAttendanceModal(true);
+        }
+
+        async function saveAttendanceValidation(event) {
+            event.preventDefault();
+            const id = document.getElementById('valAttId').value;
+            const status = document.getElementById('valAttStatus').value;
+            const feedback = document.getElementById('valAttFeedback').value;
+            const btn = document.getElementById('btnSaveValAtt');
+
+            btn.disabled = true;
+            btn.textContent = 'Menyimpan...';
+
+            try {
+                const updateData = { Status: status, Feedback: feedback };
+                if (status === 'Ditolak') updateData.StatusAbsen = 'A';
+
+                const res = await API.updateData('KEHADIRAN', id, updateData);
+                if (res.status === 'success') {
+                    showToast('Absensi divalidasi!', 'success');
+                    toggleAttendanceModal(false);
+                    // Refresh local cache
+                    const idx = window.allAttendance.findIndex(item => item.ID_Absen == id);
+                    if (idx !== -1) {
+                        window.allAttendance[idx].Status = status;
+                        window.allAttendance[idx].Feedback = feedback;
+                        if (updateData.StatusAbsen) window.allAttendance[idx].StatusAbsen = updateData.StatusAbsen;
+                    }
+                    loadAttendanceData();
+                } else { throw new Error(res.message); }
+            } catch (err) {
+                showToast('Gagal: ' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Simpan Validasi';
+            }
+        }
+
+        // --- Evaluation (Grading) ---
+        function loadEvaluationData() {
+            const tbody = document.getElementById('evaluationTableBody');
+
+            if (cachedAssignedStudents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">Tidak ada data siswa.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            cachedAssignedStudents.forEach(s => {
+                const ev = window.allEvaluations.find(e => e.NIS == s.nis);
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #f1f5f9';
+
+                tr.innerHTML = `
+                    <td data-label="Nama Siswa" style="padding: 1rem;">
+                        <div style="font-weight: 600;">${s.nama}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">NIS: ${s.nis}</div>
+                    </td>
+                    <td data-label="Kelas/Jurusan" style="padding: 1rem;">
+                        <div>${s.jurusan}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${s.kelas}</div>
+                    </td>
+                    <td data-label="Status" style="padding: 1rem;">
+                        ${ev ? '<span class="badge" style="background:var(--success); color:white; padding: 0.2rem 0.6rem; border-radius:1rem; font-size:0.75rem;">Sudah Dinilai</span>' : '<span class="badge" style="background:#f1f5f9; color:var(--text-muted); padding: 0.2rem 0.6rem; border-radius:1rem; font-size:0.75rem;">Belum Dinilai</span>'}
+                    </td>
+                    <td data-label="Aksi" style="padding: 1rem;">
+                        <button class="btn btn-primary" style="width:auto; padding:0.4rem 0.6rem;" onclick="openEvaluationForm('${s.nis}')"><i class="fas fa-pen"></i> Beri Nilai</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleEvaluationModal(show) {
+            const modal = document.getElementById('evaluationModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        function openEvaluationForm(nis) {
+            const s = cachedAssignedStudents.find(stu => (stu.nis || stu.NIS) == nis);
+            if (!s) return;
+
+            const ev = window.allEvaluations.find(e => (e.NIS || e.nis) == nis) || {};
+
+            document.getElementById('evalNis').value = nis;
+            document.getElementById('evalStudentName').textContent = s.nama || s.NAMA || '-';
+            document.getElementById('evalStudentNis').textContent = s.nis;
+
+            // Attendance Recap
+            const attRecords = window.allAttendance.filter(a => a.NIS == nis);
+            const counts = { A: 0, I: 0, S: 0 };
+            attRecords.forEach(a => {
+                if (counts.hasOwnProperty(a.StatusAbsen)) counts[a.StatusAbsen]++;
+            });
+
+            document.getElementById('recapAlpa').textContent = counts.A;
+            document.getElementById('recapIjin').textContent = counts.I;
+            document.getElementById('recapSakit').textContent = counts.S;
+
+            // Set values or default from recap if not already exists in saved evaluation
+            document.getElementById('evalSoftskill').value = ev.score_softskill || '';
+            document.getElementById('evalPos').value = ev.score_pos || '';
+            document.getElementById('evalTechnical').value = ev.score_technical || '';
+            document.getElementById('evalBisnisDudi').value = ev.score_bisnisdudi || '';
+            document.getElementById('evalDisiplin').value = ev.kedisplinan || '';
+            document.getElementById('evalKerjasama').value = ev.kerjasama || '';
+            document.getElementById('evalInisiatif').value = ev.inisiatif || '';
+            document.getElementById('evalKerajinan').value = ev.kerajinan || '';
+            document.getElementById('evalTanggungJawab').value = ev.TanggungJawab || '';
+            document.getElementById('evalNotes').value = ev.catatan || '';
+
+            // Auto-populate attendance inputs
+            document.getElementById('evalSakit').value = (ev.sakit !== undefined && ev.sakit !== '') ? ev.sakit : counts.S;
+            document.getElementById('evalIjin').value = (ev.ijin !== undefined && ev.ijin !== '') ? ev.ijin : counts.I;
+            document.getElementById('evalAlpa').value = (ev.alpa !== undefined && ev.alpa !== '') ? ev.alpa : counts.A;
+
+            toggleEvaluationModal(true);
+        }
+
+        async function saveEvaluation(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveEval');
+            const nis = document.getElementById('evalNis').value;
+
+            const data = {
+                NIS: nis,
+                ID_PKL: cachedPklLocation.ID_PKL,
+                score_softskill: document.getElementById('evalSoftskill').value,
+                score_pos: document.getElementById('evalPos').value,
+                score_technical: document.getElementById('evalTechnical').value,
+                score_bisnisdudi: document.getElementById('evalBisnisDudi').value,
+                kedisplinan: document.getElementById('evalDisiplin').value,
+                kerjasama: document.getElementById('evalKerjasama').value,
+                inisiatif: document.getElementById('evalInisiatif').value,
+                kerajinan: document.getElementById('evalKerajinan').value,
+                TanggungJawab: document.getElementById('evalTanggungJawab').value,
+                catatan: document.getElementById('evalNotes').value,
+                sakit: document.getElementById('evalSakit').value,
+                ijin: document.getElementById('evalIjin').value,
+                alpa: document.getElementById('evalAlpa').value
+            };
+
+            btn.disabled = true;
+            btn.textContent = 'Menyimpan...';
+
+            try {
+                const existing = window.allEvaluations.find(ev => (ev.NIS || ev.nis) == nis);
+                let res;
+                if (existing) {
+                    res = await API.updateData('EVALUASI', existing.ID_Evaluasi || existing.id_evaluasi, data);
+                } else {
+                    data.ID_Evaluasi = 'EV-' + Date.now();
+                    res = await API.postData('EVALUASI', data);
+                }
+
+                if (res.status === 'success') {
+                    showToast('Penilaian disimpan!', 'success');
+                    toggleEvaluationModal(false);
+                    // Refresh local cache
+                    const freshEval = await API.getData('EVALUASI');
+                    window.allEvaluations = freshEval.data;
+                    loadEvaluationData();
+                } else { throw new Error(res.message); }
+            } catch (err) {
+                showToast('Gagal: ' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Simpan Penilaian';
+            }
+        }
+
+        // --- Industry Data ---
+        let indPickerMap, indPickerMarker, indViewMap, indViewMarker;
+
+        function initViewMap(lat, lng) {
+            const container = document.getElementById('vIndMap');
+            if (!lat || !lng) {
+                container.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; background:#f8fafc; color:#94a3b8;">Lokasi belum diatur</div>';
+                return;
+            }
+
+            if (!indViewMap) {
+                indViewMap = L.map('vIndMap').setView([lat, lng], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(indViewMap);
+                indViewMarker = L.marker([lat, lng]).addTo(indViewMap);
+                // First attempt
+                setTimeout(() => indViewMap.invalidateSize(), 500);
+                // Second attempt to catch late rendering
+                setTimeout(() => indViewMap.invalidateSize(), 1500);
+            } else {
+                indViewMap.setView([lat, lng], 15);
+                indViewMarker.setLatLng([lat, lng]);
+                setTimeout(() => indViewMap.invalidateSize(), 200);
+            }
+        }
+
+        async function toggleIndustryEdit(show) {
+            const industryViewMode = document.getElementById('industryViewMode');
+            const industryForm = document.getElementById('industryForm');
+
+            if (show && cachedPklLocation) {
+                const p = cachedPklLocation;
+                document.getElementById('indId').value = p.ID_PKL || '';
+                document.getElementById('indNama').value = p.NamaTempat || '';
+                document.getElementById('indAlamat').value = p.Alamat || '';
+                document.getElementById('indPimpinan').value = p.NamaPimpinan || '';
+                document.getElementById('indBidang').value = p.BidangUsaha || '';
+                document.getElementById('indMentor').value = p.NamaMentor || '';
+                document.getElementById('indKontak').value = p.KontakMentor || '';
+                document.getElementById('indEmail').value = p.Email || '';
+                document.getElementById('indDesc').value = p.description || '';
+                document.getElementById('indLat').value = p.LAT || '';
+                document.getElementById('indLng').value = p.LNG || '';
+
+                // Ensure checklist is loaded
+                await loadJurusanChecklist();
+
+                // Set Checklist
+                const selectedJurusan = (p.Jurusan || '').split(',').map(s => s.trim());
+                document.querySelectorAll('.jurusan-checkbox').forEach(cb => {
+                    cb.checked = selectedJurusan.includes(cb.value);
+                });
+                updateJurusanCount();
+
+                setTimeout(() => initPickerMap(p.LAT, p.LNG), 300);
+            }
+
+            industryViewMode.classList.toggle('hidden', show);
+            industryForm.classList.toggle('hidden', !show);
+
+            // Re-invalidate map if showing view mode
+            if (!show && cachedPklLocation) {
+                setTimeout(() => { if (indViewMap) indViewMap.invalidateSize(); }, 500);
+            }
+        }
+
+        function initPickerMap(lat, lng) {
+            const defaultLat = lat || -7.9839;
+            const defaultLng = lng || 112.6214;
+
+            if (!indPickerMap) {
+                indPickerMap = L.map('industryPickerMap').setView([defaultLat, defaultLng], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(indPickerMap);
+
+                indPickerMap.on('click', (e) => {
+                    setPickerMarker(e.latlng.lat, e.latlng.lng);
+                });
+            } else {
+                indPickerMap.setView([defaultLat, defaultLng], lat ? 15 : 13);
+                setTimeout(() => indPickerMap.invalidateSize(), 100);
+            }
+
+            if (lat && lng) {
+                setPickerMarker(lat, lng);
+            } else if (indPickerMarker) {
+                indPickerMap.removeLayer(indPickerMarker);
+                indPickerMarker = null;
+            }
+        }
+
+        function setPickerMarker(lat, lng) {
+            if (indPickerMarker) {
+                indPickerMarker.setLatLng([lat, lng]);
+            } else {
+                indPickerMarker = L.marker([lat, lng]).addTo(indPickerMap);
+            }
+            document.getElementById('indLat').value = lat.toFixed(6);
+            document.getElementById('indLng').value = lng.toFixed(6);
+        }
+
+        async function searchLocationOnMapInd() {
+            const query = document.getElementById('indMapSearchInput').value;
+            if (!query) return showToast('Masukkan lokasi yang ingin dicari', 'warning');
+
+            const btn = document.querySelector('[onclick="searchLocationOnMapInd()"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    const first = data[0];
+                    const lat = parseFloat(first.lat);
+                    const lon = parseFloat(first.lon);
+                    indPickerMap.setView([lat, lon], 15);
+                    setPickerMarker(lat, lon);
+                    showToast('Lokasi ditemukan', 'success');
+                } else {
+                    showToast('Lokasi tidak ditemukan', 'danger');
+                }
+            } catch (e) {
+                showToast('Gagal mencari lokasi', 'danger');
+            } finally {
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        function currentLocationOnMapInd() {
+            if (!navigator.geolocation) return showToast('Geolokasi tidak didukung', 'danger');
+            showToast('Mencari lokasi saat ini...', 'info');
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude, longitude } = pos.coords;
+                indPickerMap.setView([latitude, longitude], 15);
+                setPickerMarker(latitude, longitude);
+            }, () => showToast('Gagal mendapatkan lokasi', 'danger'));
+        }
+
+        // Checklist Logic
+        function toggleChecklist() {
+            document.getElementById('checklistItems').classList.toggle('hidden');
+        }
+
+        async function loadJurusanChecklist() {
+            const container = document.getElementById('checklistItems');
+            if (container.children.length > 0) return; // Already loaded
+
+            try {
+                const res = await API.getData('JURUSAN');
+                if (res.status === 'success') {
+                    container.innerHTML = res.data.map(j => `
+                        <label>
+                            <input type="checkbox" class="jurusan-checkbox" value="${j.Jurusan}" onchange="updateJurusanCount()">
+                            ${j.Jurusan}
+                        </label>
+                    `).join('');
+                }
+            } catch (e) {
+                container.innerHTML = '<p style="padding:0.5rem; color:var(--danger);">Gagal memuat</p>';
+            }
+        }
+
+        function updateJurusanCount() {
+            const checked = Array.from(document.querySelectorAll('.jurusan-checkbox:checked')).map(cb => cb.value);
+            document.getElementById('jurusanCount').textContent = checked.length > 0 ? checked.join(', ') : 'Pilih Jurusan...';
+        }
+
+        function getSelectedJurusan() {
+            return Array.from(document.querySelectorAll('.jurusan-checkbox:checked')).map(cb => cb.value).join(', ');
+        }
+
+        // Close checklist of clicked outside
+        document.addEventListener('click', (e) => {
+            const checklist = document.getElementById('indJurusanChecklist');
+            if (checklist && !checklist.contains(e.target)) {
+                document.getElementById('checklistItems').classList.add('hidden');
+            }
+        });
+
+        async function loadIndustryData() {
+            if (!cachedPklLocation) return;
+            const p = cachedPklLocation;
+
+            // Update View Mode (Header)
+            document.getElementById('vIndNamaHeader').textContent = p.NamaTempat || '-';
+            document.getElementById('vIndBidangHeader').textContent = p.BidangUsaha || '-';
+            document.getElementById('vIndJurusanHeader').textContent = p.Jurusan || '-';
+
+            // Update View Mode (Details)
+            document.getElementById('vIndNama').textContent = p.NamaTempat || '-';
+            document.getElementById('vIndBidang').textContent = p.BidangUsaha || '-';
+            document.getElementById('vIndJurusan').textContent = p.Jurusan || '-';
+            document.getElementById('vIndAlamat').textContent = p.Alamat || '-';
+            document.getElementById('vIndPimpinan').textContent = p.NamaPimpinan || '-';
+            document.getElementById('vIndEmail').textContent = p.Email || '-';
+            document.getElementById('vIndMentor').textContent = p.NamaMentor || '-';
+            document.getElementById('vIndKontak').innerHTML = formatWhatsApp(p.KontakMentor) || '-';
+            document.getElementById('vIndDesc').textContent = p.description || '-';
+
+            initViewMap(p.LAT, p.LNG);
+            await loadJurusanChecklist(); // Prepare checklist options
+            toggleIndustryEdit(false);
+        }
+
+        // --- Data Siswa (List) ---
+        function loadStudentListData() {
+            const tbody = document.getElementById('studentListTableBody');
+
+            if (cachedAssignedStudents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">Tidak ada data siswa.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            cachedAssignedStudents.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #f1f5f9';
+
+                const name = s.nama || s.NAMA || '-';
+                const nis = s.nis || s.NIS || '-';
+                const photo = s.photo || s.Photo || '';
+                const kelas = s.kelas || s.KELAS || '-';
+                const jurusan = s.jurusan || s.JURUSAN || '-';
+
+                tr.innerHTML = `
+                    <td data-label="Siswa" style="padding: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <img src="${photo ? getDriveThumbnail(photo) : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name)}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                            <div>
+                                <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${name}</div>
+                                <div style="font-size: 0.75rem; color: var(--electric-blue); font-weight: 600; letter-spacing: 0.05em;">NIS: ${nis}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Kelas" style="padding: 1rem;">
+                        <div style="font-weight: 600; color: var(--text-main);">${kelas}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); opacity: 0.8;">${jurusan}</div>
+                    </td>
+                    <td data-label="Aksi" style="padding: 1rem; text-align: right;">
+                        <button class="btn" style="width: auto; padding: 0.4rem 1rem; background: rgba(59, 130, 246, 0.1); color: var(--primary); border-radius: 0.5rem; font-size: 0.85rem;" onclick="openStudentDetail('${nis}')" title="Lihat Detail">
+                            <i class="fas fa-eye" style="margin-right:0.25rem;"></i> Detail
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleStudentDetailModal(show) {
+            const modal = document.getElementById('studentDetailModal');
+            modal.classList.toggle('hidden', !show);
+            modal.style.display = show ? 'flex' : 'none';
+        }
+
+        function openStudentDetail(nis) {
+            const s = cachedAssignedStudents.find(stu => (stu.nis || stu.NIS) == nis);
+            if (!s) return;
+
+            const name = s.nama || s.NAMA || '-';
+            const ns = s.nis || s.NIS || '-';
+            const photo = s.photo || s.Photo || s.photo_profile || '';
+            const kelas = s.kelas || s.KELAS || '-';
+            const jurusan = s.jurusan || s.JURUSAN || '-';
+            const bb = s.place_birth || s.TempatLahir || '-';
+            const db = s.date_birth || s.TanggalLahir || '';
+            const blood = s.type_blood || s.GolDarah || '-';
+            const addr = s.address || s.Alamat || '-';
+            const contact = s.contact || s.KontakSiswa || '-';
+            const parent = s.parent_name || s.NamaOrangtua || '-';
+            const parentContact = s.parent_contact || s.KontakOrangtua || '-';
+
+            document.getElementById('detailSiswaPhoto').src = photo ? getDriveThumbnail(photo) : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name);
+            document.getElementById('detailSiswaNama').textContent = name;
+            document.getElementById('detailSiswaNis').textContent = ns;
+            // Add NIK display if available in DOM
+            const nikDisplay = document.createElement('div');
+            nikDisplay.innerHTML = `<label style="font-size: 0.75rem; color: var(--text-muted); display: block;">NIK</label><div style="font-weight: 600;">${s.NIK || s.nik || '-'}</div>`;
+            document.getElementById('detailSiswaNis').parentElement.parentElement.appendChild(nikDisplay);
+
+            document.getElementById('detailSiswaKelasJurusan').textContent = `${kelas} / ${jurusan}`;
+            document.getElementById('detailSiswaTtl').textContent = `${bb}, ${formatDate(db)}`;
+            document.getElementById('detailSiswaDarah').textContent = blood;
+            document.getElementById('detailSiswaAlamat').textContent = addr;
+            document.getElementById('detailSiswaKontak').textContent = contact;
+            document.getElementById('detailSiswaOrtu').textContent = parent;
+            document.getElementById('detailSiswaKontakOrtu').textContent = parentContact;
+
+            toggleStudentDetailModal(true);
+        }
+
+        async function saveIndustryData(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveIndustry');
+            const data = {
+                NamaTempat: document.getElementById('indNama').value,
+                Alamat: document.getElementById('indAlamat').value,
+                NamaPimpinan: document.getElementById('indPimpinan').value,
+                BidangUsaha: document.getElementById('indBidang').value,
+                Jurusan: getSelectedJurusan(),
+                NamaMentor: document.getElementById('indMentor').value,
+                KontakMentor: document.getElementById('indKontak').value,
+                Email: document.getElementById('indEmail').value,
+                description: document.getElementById('indDesc').value,
+                LAT: document.getElementById('indLat').value,
+                LNG: document.getElementById('indLng').value
+            };
+
+            btn.disabled = true;
+            btn.textContent = 'Menyimpan...';
+
+            try {
+                const id = document.getElementById('indId').value;
+                const res = await API.updateData('LOKASIPKL', id, data);
+                if (res.status === 'success') {
+                    showToast('Data industri diperbarui!', 'success');
+
+                    // Sync Name to LOGINMENTOR if changed
+                    const currentUser = AUTH.getUser();
+                    if (data.NamaMentor !== currentUser.nama) {
+                        try {
+                            await API.updateProfile('mentor', currentUser.username, { nama: data.NamaMentor });
+                            const session = JSON.parse(localStorage.getItem('pkl_session'));
+                            session.nama = data.NamaMentor;
+                            localStorage.setItem('pkl_session', JSON.stringify(session));
+                            updateUserUI();
+                            document.getElementById('welcomeName').textContent = data.NamaMentor;
+                        } catch (syncErr) {
+                            console.error('Failed to sync name to login sheet:', syncErr);
+                        }
+                    }
+
+                    Object.assign(cachedPklLocation, data);
+                    document.getElementById('headerIndustryName').textContent = data.NamaTempat;
+                    loadIndustryData();
+                } else { throw new Error(res.message); }
+            } catch (err) {
+                showToast('Gagal: ' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Simpan Perubahan';
+            }
+        }
+
+        async function initDashboard() {
+            updateTime();
+            const loadingToast = document.createElement('div');
+            loadingToast.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,255,255,0.9); padding:2rem; border-radius:1rem; box-shadow:0 10px 25px rgba(0,0,0,0.1); z-index:10000; text-align:center;';
+            loadingToast.innerHTML = '<i class="fas fa-spinner fa-spin fa-2x" style="color:var(--primary); margin-bottom:1rem; display:block;"></i> Memuat Data Dashboard...';
+            document.body.appendChild(loadingToast);
+
+            try {
+                await getAssignedStudents();
+                showSection('home');
+            } catch (err) {
+                showToast('Gagal memuat data: ' + err.message, 'danger');
+            } finally {
+                loadingToast.remove();
+            }
+        }
+        initDashboard();
+
+
+        function handleAvatarPreview(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('profModalAvatar').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function saveProfile(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSaveProfile');
+            const newUsername = document.getElementById('profUsername').value;
+            const newKontak = document.getElementById('profEditKontak').value;
+            const photoFile = document.getElementById('profilePhotoInput').files[0];
+
+            btn.disabled = true;
+            btn.textContent = 'Menyimpan...';
+
+            try {
+                const currentUser = AUTH.getUser();
+                const updateData = {};
+                let newKontakVal = null;
+
+                if (newUsername !== currentUser.username) updateData.username = newUsername;
+                if (newKontak !== document.getElementById('pViewKontak').textContent) newKontakVal = newKontak;
+
+                if (photoFile) {
+                    btn.textContent = 'Mengompres...';
+                    const compressedFile = await API.compressImage(photoFile);
+                    btn.textContent = 'Mengunggah...';
+                    const uploadRes = await API.uploadFile(compressedFile);
+                    if (uploadRes.status === 'success') updateData.photo = uploadRes.url;
+                }
+
+                if (Object.keys(updateData).length === 0 && !newKontakVal) {
+                    showToast('Tidak ada perubahan.', 'info');
+                    switchProfileState('view');
+                    return;
+                }
+
+                if (Object.keys(updateData).length > 0) {
+                    const updateRes = await API.updateProfile('mentor', currentUser.username, updateData);
+                    if (updateRes.status !== 'success') throw new Error(updateRes.message);
+                }
+
+                if (newKontakVal) {
+                    const res = await API.getData('LOGINMENTOR');
+                    const dbUser = res.data.find(u => u.username === currentUser.username);
+                    if (dbUser && dbUser.ID_PKL) {
+                        await API.request('update', 'LOKASIPKL', { id: dbUser.ID_PKL, data: { KontakMentor: newKontakVal } });
+                    }
+                }
+
+                showToast('Profil diperbarui!', 'success');
+                const session = JSON.parse(localStorage.getItem('pkl_session'));
+                Object.assign(session, updateData);
+                localStorage.setItem('pkl_session', JSON.stringify(session));
+                updateUserUI();
+                openProfileModal(); // Refresh view
+            } catch (err) {
+                showToast('Kesalahan: ' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Simpan';
+            }
+        }
+
+        async function savePassword(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSavePassword');
+            const oldPass = document.getElementById('profOldPass').value;
+            const newPass = document.getElementById('profNewPass').value;
+
+            btn.disabled = true;
+            btn.textContent = 'Memproses...';
+
+            try {
+                const currentUser = AUTH.getUser();
+                const res = await API.getData('LOGINMENTOR');
+                const dbUser = res.data.find(u =>
+                    (u.username || "").toString().trim().toLowerCase() ===
+                    (currentUser.username || "").toString().trim().toLowerCase()
+                );
+
+                if (!dbUser || (oldPass || "").toString().trim() !== (dbUser.password || "").toString().trim()) {
+                    showToast('Password lama salah!', 'danger');
+                    return;
+                }
+
+                const updateRes = await API.updateProfile('mentor', currentUser.username, { password: newPass });
+                if (updateRes.status === 'success') {
+                    showToast('Password berhasil diganti!', 'success');
+                    switchProfileState('view');
+                    document.getElementById('passForm').reset();
+                } else {
+                    showToast('Gagal: ' + updateRes.message, 'danger');
+                }
+            } catch (err) {
+                showToast('Kesalahan: ' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Update Password';
+            }
+        }
+    </script>
+</body>
+
+</html>

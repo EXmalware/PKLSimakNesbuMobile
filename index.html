@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SIMAK NESBU - Sistem Pemantauan PKL</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 2.5rem;
+            border-radius: var(--radius-lg);
+            animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .logo-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.5rem;
+            background: var(--white);
+            padding: 1rem;
+            border-radius: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            animation: pulse-glow 3s infinite;
+        }
+
+        .auth-header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--white), var(--primary-light));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        #loginBtn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+
+        .form-group label {
+            color: var(--text-main);
+            opacity: 0.9;
+        }
+
+        .password-wrapper input {
+            padding-right: 3rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-card glass-card fade-in">
+        <div class="auth-header" style="text-align: center;">
+            <div class="logo-container"
+                style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);">
+                <img src="https://blogger.googleusercontent.com/img/a/AVvXsEj0gidDMAxs79SkpgBW6-nRy7SLq7ytNTzeXSLp8-sX5SKhlCY7JHDHr7BNvJ9nTF8YgHbB_kubuvfYzX4t4ONGFDfoL2-AMa8mgK29o6XGebiHkSMgiO2BoXpv0fATKQ9XMf-RPWGbqrr_KQ1iVX3JeWYh9JGXR43QSWxyIa2o-qeJR9S0_8dxANpck08"
+                    alt="Logo"
+                    style="width: 100%; height: auto; filter: drop-shadow(0 0 10px rgba(var(--primary-rgb), 0.3));">
+            </div>
+            <h1 style="font-family: 'Outfit', sans-serif; letter-spacing: -0.02em;">SIMAK NESBU</h1>
+            <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 2rem;">Sistem Pemantauan Praktek Kerja Lapangan
+            </p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username / NIS</label>
+                <div style="position: relative;">
+                    <i class="fas fa-user-circle"
+                        style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--primary-light); font-size: 1rem;"></i>
+                    <input type="text" id="username" placeholder="Masukkan NIS Anda" required
+                        style="padding-left: 2.75rem; background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1);">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-wrapper">
+                    <i class="fas fa-key"
+                        style="position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); color: var(--primary-light); font-size: 1rem; z-index: 10;"></i>
+                    <input type="password" id="password" placeholder="••••••••" required style="padding-left: 3rem;">
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility()">
+                        <i id="toggleIcon" class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="loginBtn"
+                style="width: 100%; padding: 1rem; border-radius: var(--radius); margin-top: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                <span>Masuk Dashboard</span>
+                <i class="fas fa-chevron-right" style="font-size: 0.8rem;"></i>
+            </button>
+        </form>
+
+        <div id="loginMessage"
+            style="margin-top: 1.5rem; text-align: center; font-size: 0.8rem; padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); color: #fca5a5;"
+            class="hidden"></div>
+
+        <div style="margin-top: 2.5rem; text-align: center; font-size: 0.7rem; color: var(--text-muted); opacity: 0.5;">
+            &copy; 2026 SIMAK NESBU • Crafted with Passion
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const loginMessage = document.getElementById('loginMessage');
+            const loginBtn = document.getElementById('loginBtn');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                loginBtn.disabled = true;
+                const originalContent = loginBtn.innerHTML;
+                loginBtn.innerHTML = '<span>Memverifikasi...</span> <i class="fas fa-spinner fa-spin"></i>';
+                loginMessage.classList.add('hidden');
+
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    const result = await AUTH.login(username, password);
+
+                    if (!result.success) {
+                        loginMessage.textContent = result.message;
+                        loginMessage.classList.remove('hidden');
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = originalContent;
+                    }
+                } catch (err) {
+                    loginMessage.textContent = "Terjadi kesalahan sistem. Coba lagi.";
+                    loginMessage.classList.remove('hidden');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = originalContent;
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
