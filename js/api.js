@@ -3,7 +3,7 @@
  */
 
 const CONFIG = {
-    SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxtntzYAWrTQabVdrvFQ9t6np3lqzUu5puIX3BhxSZ7h7lBiBfeW2F-papAS9X97wub/exec',
+    SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzguKHEdHnre4ryK16Aa3C6-T6a6zwBr31DJgziyCkt02OL1xaKkLlguImMZZiJpC0YTw/exec',
     IS_MOCK: localStorage.getItem('mock') === 'true' // Toggle by running: localStorage.setItem('mock', 'true')
 };
 
@@ -319,4 +319,5 @@ function togglePasswordVisibility(inputId = 'password') {
 
 window.API = API;
 window.togglePasswordVisibility = togglePasswordVisibility;
+
 
